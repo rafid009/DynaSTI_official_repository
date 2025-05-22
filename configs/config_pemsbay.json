@@ -1,0 +1,37 @@
+{
+    "is_dit_ca2": true,
+    "train": {
+        "epochs": 1000,
+        "batch_size": 16,
+        "lr": 1.0e-4
+    },      
+    "diffusion": {
+        "diffusion_embedding_dim": 128,
+        "beta_start": 0.0001,
+        "beta_end": 0.1, 
+        "num_steps": 50, 
+        "schedule": "cosine"
+    },
+    "model": {
+        "target_strategy": "spatial",
+        "d_time": 288,
+        "d_spatial": 260,
+        "n_feature": 1,
+        "d_inner": 128,
+        "n_head": 8,
+        "n_layers": 4,
+        "d_k": 64, 
+        "d_v": 64, 
+        "dropout": 0.1,
+        "spatial_context_dim": 2,
+        "spatial_context_embedding_dim": 288,
+        "feature_embed": 64,
+        "h_channels": 128,
+        "n_spatial_layers": 4
+    },
+    "ablation": {
+        "fe": false,
+        "te": true,
+        "spatial": true
+    }
+}
