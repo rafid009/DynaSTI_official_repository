@@ -1409,10 +1409,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                             'target': missing_data[0, :, :].cpu().numpy(),
                             'observed_mask': observed_points[0, :, :].cpu().numpy(),
                             'mean': station_mean.squeeze(-2)[0,:,:].cpu().numpy(),
-                            'missing_loc': missing_data_loc.numpy(),
+                            'missing_loc': missing_data_loc.cpu().numpy(),
                             'attn_spat_mean': attn_spat_mean.cpu().numpy(),
                             'attn_spat_std': attn_spat_std.cpu().numpy(),
-                            'spatial_loc': spatial_loc.numpy()
+                            'spatial_loc': spatial_loc.cpu().numpy()
                         }
                         
                         # else:
@@ -1435,7 +1435,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                             'observed_mask': observed_points[0, :, :].cpu().numpy(),
                             'attn_spat_mean': attn_spat_mean.cpu().numpy(),
                             'attn_spat_std': attn_spat_std.cpu().numpy(),
-                            'spatial_loc': spatial_loc.numpy()
+                            'spatial_loc': spatial_loc.cpu().numpy()
                         }
                         # else:
                         #     results_data[j] = {
