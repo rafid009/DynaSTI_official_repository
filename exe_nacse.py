@@ -116,24 +116,24 @@ model_diff_saits = ema.ema_model
 
 
 ########################## IGNNK ##############################
-model_ignnk = IGNNK(h=n_steps * n_features, z=128, k=1).to(device=device)
-lr = 1e-04
-max_iter = 5000
-train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk{'' if not is_neighbor else '_neighbor'}.model")
+# model_ignnk = IGNNK(h=n_steps * n_features, z=128, k=1).to(device=device)
+# lr = 1e-04
+# max_iter = 5000
+# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk{'' if not is_neighbor else '_neighbor'}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 
 ########################## DK ##############################
-coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+# coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
+# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 
 models = {
     'SPAT-SADI': model_diff_saits,
-    'IGNNK': model_ignnk,
+    # 'IGNNK': model_ignnk,
     # 'GP': None,
-    'DK': dk_model,
+    # 'DK': dk_model,
     'MEAN': None,
 }
 
@@ -143,16 +143,16 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True)
 
-d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
+# d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 
 
-is_subset = False
+# is_subset = False
 
-for dynamic_rate in d_rates:
-    print(f"dynamic rate: {dynamic_rate}")
-    evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, is_subset=is_subset)
+# for dynamic_rate in d_rates:
+#     print(f"dynamic rate: {dynamic_rate}")
+#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, is_subset=is_subset)
 
-is_subset = True
-evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_subset=is_subset)
+# is_subset = True
+# evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_subset=is_subset)
