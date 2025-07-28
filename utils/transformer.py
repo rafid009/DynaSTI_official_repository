@@ -1,11 +1,3 @@
-"""
-PyTorch Transformer model for the time-series imputation task.
-Some part of the code is from https://github.com/WenjieDu/SAITS.
-"""
-
-# Created by Wenjie Du <wenjay.du@gmail.com>
-# License: GPL-v3
-
 import numpy as np
 import torch
 import torch.nn as nn
