@@ -38,7 +38,7 @@ class NumpyArrayEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-n_steps = 288 # 672
+n_steps = 12 # 672
 n_features = 1
 # 3 -> None, 6 -> add-delta, 3 -> sole-delta
 n_spatial =  260# 11
@@ -130,13 +130,13 @@ model_diff_saits = ema.ema_model
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
 lr = 1e-06 # 1e-06
 max_iter = 2000
-train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_pemsbay.model")
+# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_pemsbay.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk_pemsbay.model"))
 
 ########################## DK ##############################
 coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 
@@ -144,10 +144,10 @@ dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, val
 models = {
  
     'SPAT-SADI': model_diff_saits,
-    'IGNNK': model_ignnk,
-    'GP': None,
-    'MEAN': None,
-    'DK': dk_model
+    # 'IGNNK': model_ignnk,
+    # 'GP': None,
+    # 'MEAN': None,
+    # 'DK': dk_model
 }
 
 mse_folder = f"results_pemsbay/metric"
@@ -156,9 +156,9 @@ print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
 dynamic_rate = -1
-dyn_rates = [-1, 0.1, 0.3, 0.5, 0.7, 0.9]
+dyn_rates = [-1]#, 0.1, 0.3, 0.5, 0.7, 0.9]
 for dynamic_rate in dyn_rates:
     print(f"dynamic rates: {dynamic_rate}")
-    evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
+    evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
 
 # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)

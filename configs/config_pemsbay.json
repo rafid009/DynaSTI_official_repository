@@ -14,7 +14,7 @@
     },
     "model": {
         "target_strategy": "spatial",
-        "d_time": 288,
+        "d_time": 12,
         "d_spatial": 260,
         "n_feature": 1,
         "d_inner": 128,
