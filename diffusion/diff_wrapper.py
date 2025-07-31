@@ -389,7 +389,7 @@ class Diffusion_base(nn.Module):
                     'spatial_context': spatial_info,
                     'X_target': noisy_data,
                     'missing_loc': missing_location,
-                    'missing_data_mask': missing_data_mask,
+                    'missing_data_mask': torch.zeros_like(missing_data_mask),
                     'A_q': A_q,
                     'A_h': A_h
                 }
