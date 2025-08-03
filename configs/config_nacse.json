@@ -1,6 +1,6 @@
 {
     "is_dit_ca2": true,
-    "ddim": false,
+    "ddim": true,
     "ddim_steps": 10,
     "train": {
         "epochs": 2000,
