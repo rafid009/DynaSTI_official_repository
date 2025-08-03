@@ -81,11 +81,13 @@ class Diffusion_base(nn.Module):
         self.n_spatial = n_spatial
         self.alpha_hats = np.cumprod(self.alphas)
         self.alpha_torch = torch.tensor(self.alpha_hats).float().unsqueeze(1).unsqueeze(1).unsqueeze(1)
-        self.is_dit = config['is_dit'] if 'is_dit' in config.keys() else False
-        self.is_neighbor = config['is_neighbor'] if 'is_neighbor' in config.keys() else False
+        self.is_dit = config['is_dit'] if 'is_dit' in config else False
+        self.is_neighbor = config['is_neighbor'] if 'is_neighbor' in config else False
         self.is_separate = True
-        self.is_ignnk = config['is_ignnk'] if 'is_ignnk' in config.keys() else False
-        self.is_dit_ca2 = config['is_dit_ca2'] if 'is_dit_ca2' in config.keys() else False
+        self.is_ignnk = config['is_ignnk'] if 'is_ignnk' in config else False
+        self.is_dit_ca2 = config['is_dit_ca2'] if 'is_dit_ca2' in config else False
+        self.ddim = config['ddim'] if 'ddim' in config else False
+        self.ddim_steps = config['ddim_steps'] if 'ddim_steps' in config else -1
         
         
         self.target_dim = config['model']['d_spatial'] * config['model']['n_feature']
@@ -454,17 +456,22 @@ class Diffusion_base(nn.Module):
                 total_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,L)
             return total_input
     
-    def impute(self, observed_data, spatial_info, cond_mask, n_samples, side_info=None, A_q=None, A_h=None, missing_location=None, missing_data_mask=None, missing_data=None):
+    def impute(self, observed_data, spatial_info, cond_mask, n_samples, side_info=None, A_q=None, A_h=None, missing_location=None, missing_data_mask=None, missing_data=None, eta=0.001):
         B, N, K, L = observed_data.shape
-        if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
+        if self.is_separate and (self.is_dit or self.is_dit_ca2):
             imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device) #.cuda() #.to(self.device)
         else:
             imputed_samples = torch.zeros(B, n_samples, N*K, L).to(self.device) #.cuda() #.to(self.device)
 
-        
+        if self.ddim:
+            steps = torch.linspace(self.num_steps - 1, 0, self.ddim_steps + 1, dtype=torch.float32)[1:].long()
+            steps = steps.to(self.device)
+            num_steps = len(steps)
+        else:
+            num_steps = self.num_steps
         all_samples_attn_spat = []
         for i in range(n_samples):
-            if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
+            if self.is_separate and (self.is_dit or self.is_dit_ca2):
                 if missing_data is not None:
                     current_sample = missing_data * missing_data_mask + (1 - missing_data_mask) * torch.randn((B, 1, K, L)).to(self.device)
                 else:
@@ -473,91 +480,194 @@ class Diffusion_base(nn.Module):
                 current_sample = torch.randn((B, N, K, L)).to(self.device) #.cuda() #.to(self.device)
             num_steps = self.num_steps
             avg_attn_spat = 0
-            for t in range(num_steps - 1, -1, -1):
-                if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
-                    cond_obs = observed_data
-                    noisy_target = current_sample
-                    total_mask = cond_mask
-                else:
-                    
-                    if self.is_ignnk:
-                        cond_obs = (cond_mask * observed_data) #.unsqueeze(1)
-                        noisy_target = ((1 - cond_mask) * current_sample) #.unsqueeze(1)
-                        diff_input = cond_obs + noisy_target
+
+            if self.ddim:
+                for j in range(len(steps) - 1):
+                    t = steps[j]
+                    t_next = steps[j + 1]
+                    alpha_bar_t = self.alpha_hats[t]
+                    alpha_bar_t_next = self.alpha_hats[t_next]
+                    if self.is_separate and (self.is_dit or self.is_dit_ca2):
+                        cond_obs = observed_data
+                        noisy_target = current_sample
                         total_mask = cond_mask
                     else:
-                        cond_obs = (cond_mask * observed_data).unsqueeze(1)
-                        noisy_target = ((1 - cond_mask) * current_sample).unsqueeze(1)
-                        diff_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,L)
+                        
+                        if self.is_ignnk:
+                            cond_obs = (cond_mask * observed_data) #.unsqueeze(1)
+                            noisy_target = ((1 - cond_mask) * current_sample) #.unsqueeze(1)
+                            diff_input = cond_obs + noisy_target
+                            total_mask = cond_mask
+                        else:
+                            
+                            cond_obs = (cond_mask * observed_data).unsqueeze(1)
+                            noisy_target = ((1 - cond_mask) * current_sample).unsqueeze(1)
+                            diff_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,L)
 
-                        temp_mask = cond_mask.unsqueeze(dim=1)
-                        total_mask = torch.cat([temp_mask, (1 - temp_mask)], dim=1)
-                if self.is_ignnk:
-                    predicted = self.diffmodel(diff_input, total_mask, A_q, A_h, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
-                elif self.is_dit_ca2:
-                    inputs = {
-                            'X_input': cond_obs,
-                            'spatial_context': spatial_info,
-                            'missing_mask': total_mask,
-                            'X_target': noisy_target,
-                            'missing_loc': missing_location,
-                            'missing_data_mask': missing_data_mask,
-                            'A_q': A_q,
-                            'A_h': A_h
-                        }
-                    predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
-                    # print(f"attn spat: {attn_spat.shape}")
-                    if attn_spat is not None:
-                        avg_attn_spat += attn_spat
-                elif self.is_dit:
-                    if self.is_separate:
+                            temp_mask = cond_mask.unsqueeze(dim=1)
+                            total_mask = torch.cat([temp_mask, (1 - temp_mask)], dim=1)
+                    if self.is_ignnk:
+                        predicted = self.diffmodel(diff_input, total_mask, A_q, A_h, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
+                    elif self.is_dit_ca2:
                         inputs = {
-                            'X_input': cond_obs,
-                            'spatial_context': spatial_info,
-                            'missing_mask': total_mask,
-                            'X_target': noisy_target,
-                            'missing_loc': missing_location
-                            # 'adj': adj
-                        }
+                                'X_input': cond_obs,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                'X_target': noisy_target,
+                                'missing_loc': missing_location,
+                                'missing_data_mask': missing_data_mask,
+                                'A_q': A_q,
+                                'A_h': A_h
+                            }
+                        predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
+                        # print(f"attn spat: {attn_spat.shape}")
+                        if attn_spat is not None:
+                            avg_attn_spat += attn_spat
+                    elif self.is_dit:
+                        if self.is_separate:
+                            inputs = {
+                                'X_input': cond_obs,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                'X_target': noisy_target,
+                                'missing_loc': missing_location
+                                # 'adj': adj
+                            }
+                        else:
+                            inputs = {
+                                'X': diff_input,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                # 'adj': adj
+                            }
+                        predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device)) 
+                        # print(f"current_sample 1: {current_sample}")
+                        # print(f"predicted: {predicted}\n")
                     else:
+                        B, _, N, K, L = diff_input.shape
+                        diff_input = diff_input.reshape(B, 2, -1, L)
+                        total_mask = total_mask.reshape(B, 2, -1, L)
                         inputs = {
                             'X': diff_input,
-                            'spatial_context': spatial_info,
-                            'missing_mask': total_mask,
-                            # 'adj': adj
+                            'missing_mask': total_mask
                         }
-                    predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device)) 
-                    # print(f"current_sample 1: {current_sample}")
-                    # print(f"predicted: {predicted}\n")
-                else:
-                    B, _, N, K, L = diff_input.shape
-                    diff_input = diff_input.reshape(B, 2, -1, L)
-                    total_mask = total_mask.reshape(B, 2, -1, L)
-                    inputs = {
-                        'X': diff_input,
-                        'missing_mask': total_mask
-                    }
-                    _, _, predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))              
-                if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
-                    predicted = predicted.reshape(B, 1, K, L)
-                else:
-                    predicted = predicted.reshape(B, N, K, L)
+                        _, _, predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))              
+                    if self.is_separate and (self.is_dit or self.is_dit_ca2):
+                        predicted = predicted.reshape(B, 1, K, L)
+                    else:
+                        predicted = predicted.reshape(B, N, K, L)
 
-                
-                coeff1 = 1 / self.alphas[t] ** 0.5
-                coeff2 = (1 - self.alphas[t]) / (1 - self.alpha_hats[t]) ** 0.5
-                # print(f"curr: {current_sample.shape} and predicted: {predicted.shape}")
-                # print(f"coeff1: {coeff1} and coeff2: {coeff2}")
-                current_sample = coeff1 * (current_sample - coeff2 * predicted)
-                # print(f"current sample 2: {current_sample}")
-                if t > 0:
-                    noise = torch.randn_like(current_sample)
-                    sigma = (
-                        (1.0 - self.alpha_hats[t - 1]) / (1.0 - self.alpha_hats[t]) * self.betas[t]
-                    ) ** 0.5
-                    # print(f"noise: {noise}")
-                    # print(f"sigma: {sigma}")
-                    current_sample += sigma * noise
+                    # Predict x0
+                    sqrt_alpha_bar_t = torch.sqrt(alpha_bar_t)
+                    x0_theta = (current_sample - torch.sqrt(1 - alpha_bar_t) * predicted) / sqrt_alpha_bar_t
+
+                    # Compute sigma for DDIM (eta controls stochasticity)
+                    sigma_t = eta * torch.sqrt((1 - alpha_bar_t_next) / (1 - alpha_bar_t)) * torch.sqrt(1 - alpha_bar_t / alpha_bar_t_next)
+                    sigma_t = sigma_t.clamp(0)
+
+                    # DDIM update
+                    current_sample = (torch.sqrt(alpha_bar_t_next) * x0_theta +
+                        torch.sqrt(1 - alpha_bar_t_next - sigma_t**2) * predicted +
+                        sigma_t * torch.randn_like(current_sample))
+                    
+                    # coeff1 = 1 / self.alphas[t] ** 0.5
+                    # coeff2 = (1 - self.alphas[t]) / (1 - self.alpha_hats[t]) ** 0.5
+                    # current_sample = coeff1 * (current_sample - coeff2 * predicted)
+                    # print(f"current sample 2: {current_sample}")
+                    # if t > 0:
+                    #     noise = torch.randn_like(current_sample)
+                    #     sigma = (
+                    #         (1.0 - self.alpha_hats[t - 1]) / (1.0 - self.alpha_hats[t]) * self.betas[t]
+                    #     ) ** 0.5
+                    #     # print(f"noise: {noise}")
+                    #     # print(f"sigma: {sigma}")
+                    #     current_sample += sigma * noise
+            else:
+                for t in range(num_steps - 1, -1, -1):
+                    if self.is_separate and (self.is_dit or self.is_dit_ca2):
+                        cond_obs = observed_data
+                        noisy_target = current_sample
+                        total_mask = cond_mask
+                    else:
+                        
+                        if self.is_ignnk:
+                            cond_obs = (cond_mask * observed_data) #.unsqueeze(1)
+                            noisy_target = ((1 - cond_mask) * current_sample) #.unsqueeze(1)
+                            diff_input = cond_obs + noisy_target
+                            total_mask = cond_mask
+                        else:
+                            cond_obs = (cond_mask * observed_data).unsqueeze(1)
+                            noisy_target = ((1 - cond_mask) * current_sample).unsqueeze(1)
+                            diff_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,L)
+
+                            temp_mask = cond_mask.unsqueeze(dim=1)
+                            total_mask = torch.cat([temp_mask, (1 - temp_mask)], dim=1)
+                    if self.is_ignnk:
+                        predicted = self.diffmodel(diff_input, total_mask, A_q, A_h, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
+                    elif self.is_dit_ca2:
+                        inputs = {
+                                'X_input': cond_obs,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                'X_target': noisy_target,
+                                'missing_loc': missing_location,
+                                'missing_data_mask': missing_data_mask,
+                                'A_q': A_q,
+                                'A_h': A_h
+                            }
+                        predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
+                        # print(f"attn spat: {attn_spat.shape}")
+                        if attn_spat is not None:
+                            avg_attn_spat += attn_spat
+                    elif self.is_dit:
+                        if self.is_separate:
+                            inputs = {
+                                'X_input': cond_obs,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                'X_target': noisy_target,
+                                'missing_loc': missing_location
+                                # 'adj': adj
+                            }
+                        else:
+                            inputs = {
+                                'X': diff_input,
+                                'spatial_context': spatial_info,
+                                'missing_mask': total_mask,
+                                # 'adj': adj
+                            }
+                        predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device)) 
+                        # print(f"current_sample 1: {current_sample}")
+                        # print(f"predicted: {predicted}\n")
+                    else:
+                        B, _, N, K, L = diff_input.shape
+                        diff_input = diff_input.reshape(B, 2, -1, L)
+                        total_mask = total_mask.reshape(B, 2, -1, L)
+                        inputs = {
+                            'X': diff_input,
+                            'missing_mask': total_mask
+                        }
+                        _, _, predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))              
+                    if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
+                        predicted = predicted.reshape(B, 1, K, L)
+                    else:
+                        predicted = predicted.reshape(B, N, K, L)
+
+                    
+                    coeff1 = 1 / self.alphas[t] ** 0.5
+                    coeff2 = (1 - self.alphas[t]) / (1 - self.alpha_hats[t]) ** 0.5
+                    # print(f"curr: {current_sample.shape} and predicted: {predicted.shape}")
+                    # print(f"coeff1: {coeff1} and coeff2: {coeff2}")
+                    current_sample = coeff1 * (current_sample - coeff2 * predicted)
+                    # print(f"current sample 2: {current_sample}")
+                    if t > 0:
+                        noise = torch.randn_like(current_sample)
+                        sigma = (
+                            (1.0 - self.alpha_hats[t - 1]) / (1.0 - self.alpha_hats[t]) * self.betas[t]
+                        ) ** 0.5
+                        # print(f"noise: {noise}")
+                        # print(f"sigma: {sigma}")
+                        current_sample += sigma * noise
                 # print(f"current sample: {current_sample.shape}")
             # current_sample = (1 - cond_mask) * current_sample + cond_mask * observed_data
             
