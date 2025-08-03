@@ -77,9 +77,9 @@ class Diffusion_base(nn.Module):
                 lambda t: math.cos((t + 0.008) / 1.008 * math.pi / 2) ** 2, config['diffusion']['beta_end']
             )
 
-        self.alphas = 1 - self.betas
+        self.alphas = torch.tensor(1 - self.betas)
         self.n_spatial = n_spatial
-        self.alpha_hats = np.cumprod(self.alphas)
+        self.alpha_hats = torch.cumprod(self.alphas, dim=0)
         self.alpha_torch = torch.tensor(self.alpha_hats).float().unsqueeze(1).unsqueeze(1).unsqueeze(1)
         self.is_dit = config['is_dit'] if 'is_dit' in config else False
         self.is_neighbor = config['is_neighbor'] if 'is_neighbor' in config else False
