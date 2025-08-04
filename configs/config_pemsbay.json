@@ -28,7 +28,7 @@
         "spatial_context_dim": 2,
         "spatial_context_embedding_dim": 288,
         "feature_embed": 64,
-        "h_channels": 128,
+        "h_channels": 256,
         "n_spatial_layers": 4
     },
     "ablation": {
