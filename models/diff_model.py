@@ -1444,7 +1444,7 @@ class DynaSTI(nn.Module):
 
         spatial_embed = F.leaky_relu(self.spatial_context_embeddimg(spatial_input)) # B, N, 128
         missing_location_embed = F.leaky_relu(self.missing_spatial_context_embedding(missing_location)) # B, 1, 128
-        print(f"missing location embed: {missing_location_embed.shape}")
+        # print(f"missing location embed: {missing_location_embed.shape}")
         t2 = self.t_embedder_2(t).unsqueeze(dim=1).unsqueeze(1)   # (B, 1, 1, K+128)
         t2 = t2.repeat(1, L, 1, 1) # B, L, 1, K+128
                  
@@ -1474,6 +1474,7 @@ class DynaSTI(nn.Module):
             noise = self.noise_mask_embed(noise) # B, L, M, 2K
             
             # noise = self.noise_feature_embed(noise) # B, L, D
+            missing_location_embed = missing_location_embed.reshape(B, 1, M, -1) # B, 1, M, 128
             repeated_missing_location_embed = missing_location_embed.repeat(1, L, 1, 1) # B, L, M, 128
         
         else:
@@ -1487,7 +1488,7 @@ class DynaSTI(nn.Module):
             
             # noise = self.noise_feature_embed(noise) # B, L, D
             repeated_missing_location_embed = missing_location_embed.repeat(1, L, 1) # B, L, 128
-        print(f"noise: {noise.shape}, repeated loc: {repeated_missing_location_embed.shape}")
+        # print(f"noise: {noise.shape}, repeated loc: {repeated_missing_location_embed.shape}")
         noise = torch.cat([noise, repeated_missing_location_embed], dim=-1)  # (B, L, K + 128)
         
         
