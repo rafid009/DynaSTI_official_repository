@@ -683,7 +683,7 @@ def get_mean_std(dataset_name, filename, mean=None, std=None):
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
                             data=False, noise=False, filename=None, is_yearly=True, n_features=-1, n_steps=366, pattern=None, 
                             mean=None, std=None, partial_bm_config=None, spatial=False, unnormalize=False,
-                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False):  
+                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):  
     nsample = 50
     if 'CSDI' in models.keys():
         models['CSDI'].eval()
@@ -722,7 +722,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         if forecasting and not data and range_len is not None:
             length = np.random.randint(low=range_len[0], high=range_len[1] + 1)
         if dataset_name == 'nasce':
-            test_loader = get_testloader_nasce(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset)
+            test_loader = get_testloader_nasce(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
         if dataset_name == 'awn':
             test_loader = get_testloader_awn(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset)
         if dataset_name == 'metrla':
@@ -1168,9 +1168,14 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     if 'SPAT-SADI' in models.keys():
                         # print(f"mean: {train_mean.shape}")
                         if is_separate:
-                            samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, 1, train_mean.shape[1])
-                            samples_diff_saits_mean = (samples_diff_saits_mean * train_std) + train_mean
-                            samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                            if missing_dims != -1:
+                                samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                samples_diff_saits_mean = (samples_diff_saits_mean * train_std) + train_mean
+                                samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                            else:
+                                samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, 1, train_mean.shape[1])
+                                samples_diff_saits_mean = (samples_diff_saits_mean * train_std) + train_mean
+                                samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, 1 * train_mean.shape[1])
                         else:
                             samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, n_stations, train_mean.shape[1])
                             samples_diff_saits_mean = (samples_diff_saits_mean * train_std) + train_mean
@@ -1209,11 +1214,17 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                                 # print(f"missing data shape: {missing_data.shape}, train mean: {train_mean.shape}")
                                 # observed_values = test_batch['observed_data']
 
-                                
-                                missing_data_temp = missing_data.reshape(-1, n_steps, 1, train_mean.shape[1])
-                                missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, 1, train_mean.shape[1])
-                                missing_data_temp = (missing_data_temp * train_std) + train_mean
-                                missing_data = missing_data_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                                if missing_dims != -1:
+                                    missing_data_temp = missing_data.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                    missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                    missing_data_temp = (missing_data_temp * train_std) + train_mean
+                                    missing_data = missing_data_temp.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+
+                                else:
+                                    missing_data_temp = missing_data.reshape(-1, n_steps, 1, train_mean.shape[1])
+                                    missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, 1, train_mean.shape[1])
+                                    missing_data_temp = (missing_data_temp * train_std) + train_mean
+                                    missing_data = missing_data_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
 
                                 gt_intact = gt_intact.permute((0, 1, 3, 2)) # B, L, K, N
                                 # print(f"gt intact 1: {gt_intact}")
@@ -1315,8 +1326,12 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         
 
                         if is_separate:
-                            missing_data_temp = missing_data.reshape(-1, n_steps, 1, n_features)
-                            missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, 1, n_features)
+                            if missing_dims != -1:
+                                missing_data_temp = missing_data.reshape(-1, n_steps, missing_dims, n_features)
+                                missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, missing_dims, n_features)
+                            else:
+                                missing_data_temp = missing_data.reshape(-1, n_steps, 1, n_features)
+                                missing_data_mask_temp = missing_data_mask.reshape(-1, n_steps, 1, n_features)
                             # print(f"missing_data: {missing_data_temp.shape}, station mean: {station_mean.shape}")
                             rmse_mean = ((missing_data_temp-station_mean) * missing_data_mask_temp) ** 2
                             # if missing_data_mask_temp.sum().item() == 0:
@@ -1340,9 +1355,14 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     # else:
                     #     samples_size = samples.shape[0] if 'CSDI' in models.keys() else samples_diff_saits.shape[0]
                     if is_separate:
-                        missing_data_temp = missing_data.reshape(-1, n_steps, 1, train_mean.shape[1])
-                        missing_data_temp = (missing_data_temp * train_std) + train_mean
-                        missing_data = missing_data_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                        if missing_dims != -1:
+                            missing_data_temp = missing_data.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                            missing_data_temp = (missing_data_temp * train_std) + train_mean
+                            missing_data = missing_data_temp.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                        else:
+                            missing_data_temp = missing_data.reshape(-1, n_steps, 1, train_mean.shape[1])
+                            missing_data_temp = (missing_data_temp * train_std) + train_mean
+                            missing_data = missing_data_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
                     for idx in range(samples_size):
 
                         if 'CSDI' in models.keys():
@@ -1358,14 +1378,20 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         if 'SPAT-SADI' in models.keys():
                             if is_separate:
                                 # if not spatial_slider:
-                                samples_diff_saits_temp = samples_diff_saits[0, idx].reshape(-1, n_steps, 1, train_mean.shape[1])
+                                if missing_dims != -1:
+                                    samples_diff_saits_temp = samples_diff_saits[0, idx].reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                    samples_diff_saits_temp = (samples_diff_saits_temp * train_std) + train_mean
+                                    samples_diff_saits[0, idx] = samples_diff_saits_temp.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                                
+                                else:
+                                    samples_diff_saits_temp = samples_diff_saits[0, idx].reshape(-1, n_steps, 1, train_mean.shape[1])
                                 # else:
                                 #     samples_diff_saits_temp = samples_diff_saits[idx].reshape(-1, n_steps, 1, train_mean.shape[1])
-                                samples_diff_saits_temp = (samples_diff_saits_temp * train_std) + train_mean
+                                    samples_diff_saits_temp = (samples_diff_saits_temp * train_std) + train_mean
                                 # if spatial_slider:
                                 # samples_diff_saits[idx] = samples_diff_saits_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
                                 # else:
-                                samples_diff_saits[0, idx] = samples_diff_saits_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                                    samples_diff_saits[0, idx] = samples_diff_saits_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
                             else:
                                 samples_diff_saits_temp = samples_diff_saits[0, idx].reshape(-1, n_steps, n_stations, train_mean.shape[1])
                                 # samples_diff_saits_temp = samples_diff_saits[idx].reshape(-1, n_steps, n_stations, train_mean.shape[1])

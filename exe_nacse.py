@@ -33,6 +33,7 @@ class NumpyArrayEncoder(JSONEncoder):
 data = 'temps'
 is_neighbor = False
 is_separate = True
+is_multi = True
 n_steps = 30
 n_features = 2 if data == 'temps' else 775
 # 3 -> None, 6 -> add-delta, 3 -> sole-delta
@@ -61,7 +62,7 @@ nsample = 50
 print("################### Start ###################")
  #352 #len(given_features)
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi)
 
 print(f"################### Data loading done ###################")
 
@@ -86,20 +87,20 @@ model_folder = 'saved_models_nacse'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-# train(
-#     model_diff_saits,
-#     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"nacse"
-# )
+train(
+    model_diff_saits,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"nacse"
+)
 
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -143,8 +144,8 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False)
-evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True)
+evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1)
+evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=10 if config['is_multi'] else -1)
 
 # d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 

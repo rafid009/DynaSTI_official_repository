@@ -2,6 +2,7 @@
     "is_dit_ca2": true,
     "ddim": true,
     "ddim_steps": 10,
+    "is_multi": true,
     "train": {
         "epochs": 2000,
         "batch_size": 16,

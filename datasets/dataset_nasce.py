@@ -16,7 +16,7 @@ def dynamic_sensor_selection(X_train, X_loc, rate=0.5, L=30, K=2):
     return X_train, X_loc
 
 
-def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False):
+def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):
     """Get mask of random points (missing at random) across channels based on k,
     where k == number of data points. Mask of sample's shape where 0's to be imputed, and 1's to preserved
     as per ts imputers"""
@@ -30,7 +30,10 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
         
         # print(f"evals: {evals.shape}")
         if index == -1:
-            index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], 1, replace=False))
+            if missing_dims != -1:
+                index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False))
+            else:
+                index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], 1, replace=False))
 
         if is_subset:
             feature_idxs = np.random.choice(2, 1, replace=False)
@@ -147,11 +150,17 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
 def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pristi):
     # print(f"X_train: {X_train.shape}")
     X_train = X_train.reshape(X_train.shape[0], -1, 2)
-    X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, 2)[:, index,:], axis=1)
+    if isinstance(index, int): 
+        X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, 2)[:, index,:], axis=1)
+    else:
+        X_test_missing = X_test.reshape(X_test.shape[0], -1, 2)[:, index,:]
     X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, 2)
     X_pristi[:, X_train.shape[1] - 1 + index, :] = X_test.reshape(X_test.shape[0], -1, 2)[:,index,:]
     
-    X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
+    if isinstance(index, int): 
+        X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
+    else:
+        X_loc_test_missing = X_loc_test[index,:]
     
     values = X_train.copy()
 
@@ -239,7 +248,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -381,7 +390,7 @@ class NASCE_Dataset(Dataset):
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test[i], \
                                                                                         X_loc_train=X_loc,\
-                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
+                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
                         if (is_test or is_valid) and missing_data_mask.sum() == 0:
                             continue
                         self.observed_values.append(obs_val)
@@ -483,12 +492,12 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False):
     # np.random.seed(seed=seed)
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=10 if is_multi else -1)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
@@ -498,12 +507,12 @@ def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, mis
     return train_loader, test_loader
 
 
-def get_testloader_nasce(total_stations, mean_std_file, n_features, n_steps=366, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False):
+def get_testloader_nasce(total_stations, mean_std_file, n_features, n_steps=366, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):
     np.random.seed(seed=seed)
     if forecasting:
         forward = n_steps - length
         test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, forward_trial=forward, pattern=pattern, partial_bm_config=partial_bm_config)
     else:
-        test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset)
+        test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
     return test_loader

@@ -1436,6 +1436,8 @@ class DynaSTI(nn.Module):
         A_q = inputs['A_q'] if 'A_q' in inputs.keys() else None
         A_h = inputs['A_h'] if 'A_h' in inputs.keys() else None
         B, N, K, L = X_input.shape
+        if self.config['is_multi']:
+            _, M, _, _ = X_target.shape
         
         spatial_input = spatial_info
         
@@ -1463,23 +1465,38 @@ class DynaSTI(nn.Module):
         ################################################
 
 
-        noise = X_target.reshape(B, K, L) # (B, K, L)
-
-        ############## Noise mask ################
-        noise = noise.permute(0, 2, 1) # B, L, K
-        # print(f"noise: {noise.shape}\nmissing mask: {missing_data_mask.shape}")
-        noise = torch.cat([noise, missing_data_mask.squeeze(1).permute(0, 2, 1)], dim=-1) # B, L, 2K
-        noise = self.noise_mask_embed(noise) # B, L, 2K
+        if self.config['is_multi']:
+            noise = X_target.reshape(B, M, K, L) # (B, M, K, L)
+                ############## Noise mask ################
+            noise = noise.permute(0, 3, 1, 2) # B, L, M, K
+            # print(f"noise: {noise.shape}\nmissing mask: {missing_data_mask.shape}")
+            noise = torch.cat([noise, missing_data_mask.permute(0, 3, 1, 2)], dim=-1) # B, L, M, 2K
+            noise = self.noise_mask_embed(noise) # B, L, M, 2K
+            
+            # noise = self.noise_feature_embed(noise) # B, L, D
+            repeated_missing_location_embed = missing_location_embed.repeat(1, L, 1, 1) # B, L, M, 128
         
-        # noise = self.noise_feature_embed(noise) # B, L, D
-        repeated_missing_location_embed = missing_location_embed.repeat(1, L, 1) # B, L, 128
+        else:
+            noise = X_target.reshape(B, K, L) # (B, K, L)
+
+            ############## Noise mask ################
+            noise = noise.permute(0, 2, 1) # B, L, K
+            # print(f"noise: {noise.shape}\nmissing mask: {missing_data_mask.shape}")
+            noise = torch.cat([noise, missing_data_mask.squeeze(1).permute(0, 2, 1)], dim=-1) # B, L, 2K
+            noise = self.noise_mask_embed(noise) # B, L, 2K
+            
+            # noise = self.noise_feature_embed(noise) # B, L, D
+            repeated_missing_location_embed = missing_location_embed.repeat(1, L, 1) # B, L, 128
         # print(f"noise: {noise.shape}, repeated loc: {repeated_missing_location_embed.shape}")
         noise = torch.cat([noise, repeated_missing_location_embed], dim=-1)  # (B, L, K + 128)
         
         
 
         if self.config['ablation']['spatial']:
-            noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
+            if self.config['is_multi']:
+                noise = noise.reshape((B*L, M, -1)) # B*L, M, K+128
+            else:
+                noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
             for i in range(len(self.spatial_blocks)):
                 # print(f"noise: {noise.shape}, c_spat: {c1.shape}")
                 noise, attn_spat = self.spatial_blocks[i](noise, c1) # B*L, N=1, K+128
@@ -1487,17 +1504,29 @@ class DynaSTI(nn.Module):
         
 
         c1 = c1.reshape((B, L, N, -1)) # B, L, N, K+128
-        noise = noise.reshape((B, L, 1, -1)) # B, L, 1, K+128
+        if self.config['is_multi']:
+            noise = noise.reshape((B, L, M, -1)) # B, L, M, K+128
+        else:
+            noise = noise.reshape((B, L, 1, -1)) # B, L, 1, K+128
 
         if (self.config['ablation']['te'] or self.config['ablation']['fe']):
             c3 = torch.cat([c1, noise], dim=-2) # B, L, N+1, K+128
             c2 = c3.clone()
-            c2[:, :, -1, :] = 0.0 # B, L, N+1, K+128
+            if self.config['is_multi']:
+                c2[:, :, -M:, :] = 0.0 # B, L, N+M, K+128
+            else:
+                c2[:, :, -1, :] = 0.0 # B, L, N+1, K+128
             c2 = c2 + t2 # B, L, N+1, K+128
-            c2 = c2.permute(0, 2, 1, 3).reshape((B*(N+1), L, -1)) # B * (N+1), L, K+128
+            if self.config['is_multi']:
+                c2 = c2.permute(0, 2, 1, 3).reshape((B*(N+M), L, -1)) # B * (N+M), L, K+128
+            else:
+                c2 = c2.permute(0, 2, 1, 3).reshape((B*(N+1), L, -1)) # B * (N+1), L, K+128
             c2 = self.cond_pos_enc_2(c2) # B * (N+1), L, K+128
             c3[:, :, :N, :] = 0.0 # B, L, N+1, K+128
-            c3 = c3.permute(0, 2, 1, 3).reshape((B * (N+1), L, -1)) # B * N+1, L, K+128
+            if self.config['is_multi']:
+                c3 = c3.permute(0, 2, 1, 3).reshape((B * (N+M), L, -1)) # B * N+M, L, K+128
+            else:
+                c3 = c3.permute(0, 2, 1, 3).reshape((B * (N+1), L, -1)) # B * N+1, L, K+128
             c3 = self.cond_pos_enc_3(c3) # B * N+1, L, K+128
             noise = c3
         
@@ -1515,16 +1544,25 @@ class DynaSTI(nn.Module):
                     noise = noise.permute(0, 2, 1) # B * (N+1), L, K+128
 
 
-
-            noise = noise.reshape((B, N+1, L, -1)) # B, N+1, L, K+128
+            if self.config['is_multi']:
+                noise = noise.reshape((B, N+M, L, -1)) # B, N+M, L, K+128
+            else:
+                noise = noise.reshape((B, N+1, L, -1)) # B, N+1, L, K+128
 
 
             c1 = c1.permute(0, 2, 1, 3) # B, N, L, K + 128
-            zeros = torch.zeros((B, 1, L, c1.shape[-1])).cuda() # B, 1, L, K + 128
+            if self.config['is_multi']:
+                zeros = torch.zeros((B, M, L, c1.shape[-1])).cuda() # B, M, L, K + 128
+            else:
+                zeros = torch.zeros((B, 1, L, c1.shape[-1])).cuda() # B, 1, L, K + 128
             c1 = torch.cat([c1, zeros], dim=1) # B, N+1, L, K + 128
             x = self.final_layer(noise, c1) # B, N+1, L, K
 
-            x = x[:, -1, :, :] # B, L, K
+            if self.config['is_multi']:
+                x = x[:, -M:, :, :] # B, M, L, K
+                x = x.permute(0, 2, 1, 3).reshape(B, L, -1)
+            else:
+                x = x[:, -1, :, :] # B, L, K
         else:
             noise = noise.reshape((B, L, -1)) # B, L, K+128
             x = self.final_layer(noise, c1) # B, N=1, L, K
