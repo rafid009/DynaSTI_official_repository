@@ -31,7 +31,7 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
         # print(f"evals: {evals.shape}")
         if index == -1:
             if missing_dims != -1:
-                index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False))
+                index = np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False)
             else:
                 index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], 1, replace=False))
 
