@@ -132,7 +132,7 @@ max_iter = 5000
 
 models = {
     'SPAT-SADI': model_diff_saits,
-    'IGNNK': model_ignnk,
+    # 'IGNNK': model_ignnk,
     # 'GP': None,
     # 'DK': dk_model,
     'MEAN': None,
