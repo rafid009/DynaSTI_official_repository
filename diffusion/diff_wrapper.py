@@ -226,9 +226,7 @@ class Diffusion_base(nn.Module):
 
                 locations[i, chosen_location, :] = 0
                 
-                if self.is_multi:
-                    cond_mask[i] = cond_mask[i, chosen_location, :, :]
-                else:
+                if not self.is_multi:
                     cond_mask[i] = cond_mask[i, chosen_location, :, :].unsqueeze(0)
 
         return observed_data, observed_mask, locations, cond_mask, missing_data, missing_location, missing_data_mask
