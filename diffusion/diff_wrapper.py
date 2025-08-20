@@ -188,7 +188,7 @@ class Diffusion_base(nn.Module):
                 # Randomly select one valid index
                 if self.is_multi:
                     num_indices = torch.randint(2, int(len(valid_indices)/2), (1,)).item()
-                    chosen_location = valid_indices[torch.randint(len(valid_indices), (num_indices,)).item()]
+                    chosen_location = valid_indices[torch.randint(len(valid_indices), (num_indices,))]
                 else:
                     chosen_location = valid_indices[torch.randint(len(valid_indices), (1,)).item()]
                 
