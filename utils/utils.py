@@ -1577,7 +1577,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     if 'SPAT-SADI' in models.keys():
                         # print(f"sample mean: {samples_diff_saits_mean.shape}\nc_target: {c_target.shape}\neval_points: {eval_points.shape}")
                         if is_separate:
-                            # print(f"spat-sadi mean: {samples_diff_saits_mean.shape}, missing data: {missing_data.shape}, missing mask: {missing_data_mask.shape}")
+                            print(f"spat-sadi mean: {samples_diff_saits_mean.shape}, missing data: {missing_data.shape}, missing mask: {missing_data_mask.shape}")
                             rmse_diff_saits = ((samples_diff_saits_mean - missing_data) * missing_data_mask) ** 2
                             rmse_diff_saits = rmse_diff_saits.sum().item() / missing_data_mask.sum().item()
                         else:
