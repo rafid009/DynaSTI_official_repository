@@ -177,7 +177,7 @@ class Diffusion_base(nn.Module):
     
     def get_spatial_mask_separate(self, observed_data, observed_mask, locations):
         if self.is_multi:
-            num_indices = torch.randint(2, int(len(observed_data.shape[1])/2), (1,)).item()
+            num_indices = torch.randint(2, int(observed_data.shape[1]/2), (1,)).item()
             missing_data = torch.zeros((observed_data.shape[0], num_indices, observed_data.shape[2], observed_data.shape[3])).to(self.device) #.cuda()
             missing_data_mask = torch.zeros((observed_mask.shape[0], num_indices, observed_mask.shape[2], observed_mask.shape[3])).to(self.device) #.cuda()
             missing_location = torch.zeros((locations.shape[0], num_indices, locations.shape[2])).to(self.device)
