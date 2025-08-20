@@ -1499,7 +1499,7 @@ class DynaSTI(nn.Module):
         
         if self.config['is_multi']:
             noise = noise.reshape((B*L, M, -1)) # B*L, M, K+128
-            t3 = t2.reshape(B * L, M, -1) # B*L, M, K+128
+            t3 = t2.reshape(B * L, 1, -1) # B*L, M, K+128
         else:
             noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
         if self.config['ablation']['spatial']:
