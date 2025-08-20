@@ -784,7 +784,7 @@ class DiTBlock(nn.Module):
     """
     A DiT block with adaptive layer norm zero (adaLN-Zero) conditioning.
     """
-    def __init__(self, hidden_size, num_heads, d_k=64, d_v=64, mlp_ratio=4.0, choice='time', kernel_size=3, feature_size=-1, dilation=1, sigma=2, is_cross=False, **block_kwargs):
+    def __init__(self, hidden_size, num_heads, d_k=64, d_v=64, mlp_ratio=4.0, choice='time', kernel_size=3, feature_size=-1, dilation=1, sigma=2, is_cross=False, is_self=False, **block_kwargs):
         super().__init__()
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.choice = choice
@@ -803,12 +803,13 @@ class DiTBlock(nn.Module):
             nn.Linear(hidden_size, 6 * hidden_size, bias=True)
         )
         self.is_cross = is_cross
+        self.is_self = is_self
 
     def forward(self, x, c, is_spat=False):
         # print(f"DiT block:: x: {x.shape}, c: {c.shape}")
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=-1)
         # print(f"shift: {shift_msa.shape}")
-        if self.is_cross:
+        if self.is_self or self.is_cross:
             v = self.norm1(x)
         else:
             v = modulate(self.norm1(x), shift_msa, scale_msa)
@@ -828,7 +829,7 @@ class DiTBlock(nn.Module):
             # attn, attn_weights = self.attn(v, self.choice)
 
             # attn_weights = None
-        if self.is_cross:
+        if self.is_self or self.is_cross:
             x = x + attn
             x = x + self.mlp(self.norm2(x))
         else:
@@ -1376,6 +1377,10 @@ class DynaSTI(nn.Module):
                 DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_cross=True) for _ in range(n_spatial_layer)
             ])
 
+            self.spatial_blocks_noise = nn.ModuleList([
+                DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_cross=False) for _ in range(n_spatial_layer)
+            ])
+
             
 
         if config['ablation']['te'] or config['ablation']['fe']:
@@ -1492,16 +1497,21 @@ class DynaSTI(nn.Module):
         noise = torch.cat([noise, repeated_missing_location_embed], dim=-1)  # (B, L, K + 128)
         
         
-
+        if self.config['is_multi']:
+            noise = noise.reshape((B*L, M, -1)) # B*L, M, K+128
+            t3 = t2.reshape(B * L, M, -1) # B*L, M, K+128
+        else:
+            noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
         if self.config['ablation']['spatial']:
-            if self.config['is_multi']:
-                noise = noise.reshape((B*L, M, -1)) # B*L, M, K+128
-            else:
-                noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
+            
             for i in range(len(self.spatial_blocks)):
                 # print(f"noise: {noise.shape}, c_spat: {c1.shape}")
                 noise, attn_spat = self.spatial_blocks[i](noise, c1) # B*L, N=1, K+128
                 # print(f"spatial noise: {noise.shape}")
+                if self.config['is_multi']:
+                    
+                    noise_c = noise + t3 # B*L, M, K+128
+                    noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
 
         c1 = c1.reshape((B, L, N, -1)) # B, L, N, K+128
