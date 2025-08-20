@@ -176,10 +176,17 @@ class Diffusion_base(nn.Module):
         return cond_mask
     
     def get_spatial_mask_separate(self, observed_data, observed_mask, locations):
-        missing_data = torch.zeros((observed_data.shape[0], 1, observed_data.shape[2], observed_data.shape[3])).to(self.device) #.cuda()
-        missing_data_mask = torch.zeros((observed_mask.shape[0], 1, observed_mask.shape[2], observed_mask.shape[3])).to(self.device) #.cuda()
-        missing_location = torch.zeros((locations.shape[0], 1, locations.shape[2])).to(self.device) #.cuda()
+        if self.is_multi:
+            num_indices = torch.randint(2, int(len(observed_data.shape[1])/2), (1,)).item()
+            missing_data = torch.zeros((observed_data.shape[0], num_indices, observed_data.shape[2], observed_data.shape[3])).to(self.device) #.cuda()
+            missing_data_mask = torch.zeros((observed_mask.shape[0], num_indices, observed_mask.shape[2], observed_mask.shape[3])).to(self.device) #.cuda()
+            missing_location = torch.zeros((locations.shape[0], num_indices, locations.shape[2])).to(self.device)
+        else:
+            missing_data = torch.zeros((observed_data.shape[0], 1, observed_data.shape[2], observed_data.shape[3])).to(self.device) #.cuda()
+            missing_data_mask = torch.zeros((observed_mask.shape[0], 1, observed_mask.shape[2], observed_mask.shape[3])).to(self.device) #.cuda()
+            missing_location = torch.zeros((locations.shape[0], 1, locations.shape[2])).to(self.device) #.cuda()
         cond_mask = observed_mask.clone()
+        
         for i in range(observed_data.shape[0]):  # First dimension
              # Second dimension
             # Find valid indices in the 3rd dimension for this (i, j)
@@ -187,7 +194,7 @@ class Diffusion_base(nn.Module):
             if len(valid_indices) > 0:
                 # Randomly select one valid index
                 if self.is_multi:
-                    num_indices = torch.randint(2, int(len(valid_indices)/2), (1,)).item()
+                    # num_indices = torch.randint(2, int(len(valid_indices)/2), (1,)).item()
                     chosen_location = valid_indices[torch.randint(len(valid_indices), (num_indices,))]
                 else:
                     chosen_location = valid_indices[torch.randint(len(valid_indices), (1,)).item()]
