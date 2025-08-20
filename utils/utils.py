@@ -766,6 +766,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 missing_data = test_batch['missing_data'].squeeze(2).to(device)
                 # print(f"missing data: {missing_data.shape}")
                 missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+                if missing_dims != -1:
+                    missing_data = missing_data.reshape(-1, n_steps, missing_dims * n_features)
+                    missing_data_mask = missing_data_mask.reshape(-1, n_steps, missing_dims * n_features)
                 missing_data_loc = test_batch["missing_data_loc"].to(device)
                 spatial_loc = test_batch['spatial_info'].to(device)
                 if 'CSDI' in models.keys():
@@ -1576,8 +1579,12 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     ###### DiffSAITS ######
                     if 'SPAT-SADI' in models.keys():
                         # print(f"sample mean: {samples_diff_saits_mean.shape}\nc_target: {c_target.shape}\neval_points: {eval_points.shape}")
+                        # if is_separate and missing_dims != -1:
+                        #     samples_diff_saits_mean = samples_diff_saits_mean.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                        
                         if is_separate:
-                            print(f"spat-sadi mean: {samples_diff_saits_mean.shape}, missing data: {missing_data.shape}, missing mask: {missing_data_mask.shape}")
+                            # print(f"spat-sadi mean: {samples_diff_saits_mean.shape}, missing data: {missing_data.shape}, missing mask: {missing_data_mask.shape}")
+                            
                             rmse_diff_saits = ((samples_diff_saits_mean - missing_data) * missing_data_mask) ** 2
                             rmse_diff_saits = rmse_diff_saits.sum().item() / missing_data_mask.sum().item()
                         else:
