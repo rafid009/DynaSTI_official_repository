@@ -1451,6 +1451,7 @@ class DynaSTI(nn.Module):
         missing_location_embed = F.leaky_relu(self.missing_spatial_context_embedding(missing_location)) # B, 1, 128
         # print(f"missing location embed: {missing_location_embed.shape}")
         t2 = self.t_embedder_2(t).unsqueeze(dim=1).unsqueeze(1)   # (B, 1, 1, K+128)
+        print(f"t2: {t2.shape}")
         t2 = t2.repeat(1, L, 1, 1) # B, L, 1, K+128
                  
 
