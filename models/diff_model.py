@@ -1451,7 +1451,7 @@ class DynaSTI(nn.Module):
         missing_location_embed = F.leaky_relu(self.missing_spatial_context_embedding(missing_location)) # B, 1, 128
         # print(f"missing location embed: {missing_location_embed.shape}")
         t2 = self.t_embedder_2(t).unsqueeze(dim=1).unsqueeze(1)   # (B, 1, 1, K+128)
-        print(f"t2: {t2.shape}")
+        # print(f"t2: {t2.shape}")
         t2 = t2.repeat(1, L, 1, 1) # B, L, 1, K+128
                  
 
@@ -1500,7 +1500,8 @@ class DynaSTI(nn.Module):
         
         if self.config['is_multi']:
             noise = noise.reshape((B*L, M, -1)) # B*L, M, K+128
-            t3 = t2.reshape(B * L, 1, -1) # B*L, M, K+128
+            t3 = t2.repeat(B, 1, 1, 1) # B, L, 1, K+128
+            t3 = t3.reshape(B * L, 1, -1) # B*L, M, K+128
         else:
             noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
         if self.config['ablation']['spatial']:
@@ -1510,7 +1511,7 @@ class DynaSTI(nn.Module):
                 noise, attn_spat = self.spatial_blocks[i](noise, c1) # B*L, N=1, K+128
                 # print(f"spatial noise: {noise.shape}")
                 if self.config['is_multi']:
-                    print(f"noise: {noise.shape}, t3: {t3.shape}")
+                    # print(f"noise: {noise.shape}, t3: {t3.shape}")
                     noise_c = noise + t3 # B*L, M, K+128
                     noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
