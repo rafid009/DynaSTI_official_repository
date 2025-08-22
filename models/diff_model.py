@@ -1378,7 +1378,7 @@ class DynaSTI(nn.Module):
             ])
 
             self.spatial_blocks_noise = nn.ModuleList([
-                DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_self=False) for _ in range(n_spatial_layer)
+                DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_self=True) for _ in range(n_spatial_layer)
             ])
 
             
