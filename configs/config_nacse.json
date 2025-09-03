@@ -16,6 +16,7 @@
         "beta_end": 0.1, 
         "num_steps": 50, 
         "schedule": "cosine",
+        "layers": 4,
         "channels": 64,
         "nheads": 8,
         "is_adp": true,
