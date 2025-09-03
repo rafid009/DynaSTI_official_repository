@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from models.diff_model import SADI, DiT, diff_CSDI, DynaSTI
+from models.diff_model import SADI, DiT, diff_CSDI, DynaSTI, Guide_diff
 import json
 import scipy.sparse as sp
 import math
@@ -60,6 +60,9 @@ class Diffusion_base(nn.Module):
         
         self.diffmodel = None
         self.num_steps = config['diffusion']['num_steps']
+        self.emb_time_dim = config["model"]["timeemb"]
+        self.emb_feature_dim = config["model"]["featureemb"]
+        self.emb_total_dim = self.emb_time_dim + self.emb_feature_dim + 1
 
         # self.emb_total_dim += 1 
 
@@ -89,7 +92,12 @@ class Diffusion_base(nn.Module):
         self.ddim = config['ddim'] if 'ddim' in config else False
         self.ddim_steps = config['ddim_steps'] if 'ddim_steps' in config else -1
         self.is_multi = config['is_multi'] if 'is_multi' in config.keys() else False
+        self.is_pristi = config['is_pristi'] if 'is_pristi' in config.keys() else False
         
+        if self.is_pristi:
+            self.embed_layer = nn.Embedding(
+                num_embeddings=config['model']['d_spatial']*config['model']['n_feature'], embedding_dim=self.emb_feature_dim
+            )
         
         self.target_dim = config['model']['d_spatial'] * config['model']['n_feature']
         if self.is_dit_ca2:
@@ -104,6 +112,15 @@ class Diffusion_base(nn.Module):
                     n_spatial_layer=config['model']['n_spatial_layers'],
                     num_heads=config['model']['n_head']
                 )
+        elif self.is_pristi:
+            self.train_stations = config['train_stations']
+            config["side_dim"] = self.emb_total_dim
+            self.diffmodel = Guide_diff(
+                config=config,
+                inputdim=2,
+                target_dim=config['model']['n_feature'] * config['model']['d_spatial'],
+                is_itp=False
+            )
         else:
             self.diffmodel = SADI(
                         diff_steps=config['diffusion']['num_steps'],
@@ -218,6 +235,8 @@ class Diffusion_base(nn.Module):
 
                     missing_data[i] = observed_data[i, chosen_location, :, :].clone().unsqueeze(0)
                     missing_data_mask[i] = observed_mask[i, chosen_location, :, :].clone().unsqueeze(0)
+                
+                
                 observed_data[i, chosen_location, :, :] = 0
                 observed_mask[i, chosen_location, :, :] = 0
 
@@ -225,8 +244,8 @@ class Diffusion_base(nn.Module):
                 cond_mask[i, chosen_location, :, :] = 0
 
                 locations[i, chosen_location, :] = 0
-                
-                if not self.is_multi:
+                    
+                if not self.is_pristi and not self.is_multi:
                     cond_mask[i] = cond_mask[i, chosen_location, :, :].unsqueeze(0)
 
         return observed_data, observed_mask, locations, cond_mask, missing_data, missing_location, missing_data_mask
@@ -285,6 +304,24 @@ class Diffusion_base(nn.Module):
         pe[:, :, 1::2] = torch.cos(position * div_term)
         return pe
     
+    def get_side_info(self, observed_tp, cond_mask):
+        B, N, K, L = cond_mask.shape
+        cond_mask = cond_mask.reshape(B, -1, L)
+        B, K, L = cond_mask.shape
+        # print(f"side: {observed_tp.shape}")
+        time_embed = self.time_embedding(observed_tp, self.emb_time_dim)  # (B,L,emb)
+        time_embed = time_embed.unsqueeze(2).expand(-1, -1, K, -1)
+        feature_embed = self.embed_layer(
+            torch.arange(self.target_dim).to(self.device)
+        )  # (K,emb)
+        feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1)
+        # print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
+        side_info = torch.cat([time_embed, feature_embed], dim=-1)  # (B,L,K,*)
+        side_info = side_info.permute(0, 3, 2, 1)  # (B,*,K,L)
+
+        side_mask = cond_mask.unsqueeze(1)  # (B,1,K,L)
+        side_info = torch.cat([side_info, side_mask], dim=1)
+        return side_info
 
     def geographical_distance(self, x=None, to_rad=True):
         _AVG_EARTH_RADIUS_KM = 6371.0088
@@ -418,6 +455,14 @@ class Diffusion_base(nn.Module):
                     'A_h': A_h
                 }
             predicted_3, attn_spat = self.diffmodel(inputs, t, is_train)
+        elif self.is_pristi:
+            # inputs = {
+            #     'X': total_input,
+            #     'missing_mask': total_mask,
+            #     'spatial_context': spatial_info
+            # }
+            total_input = total_input.reshape(B, 2, -1, L)
+            predicted_3 = self.diffmodel(total_input, side_info, t, None)
         elif self.is_dit:
             # print(f"cond_obs: {cond_obs.shape}, noisy data: {noisy_data.shape}")
             if self.is_separate:
@@ -450,7 +495,7 @@ class Diffusion_base(nn.Module):
         target_mask = target_mask.reshape(B, -1, L)
         residual_3 = (noise - predicted_3) * target_mask
         
-        if not self.is_ignnk and not self.is_dit and is_train != 0 and (predicted_1 is not None) and (predicted_2 is not None):
+        if not self.is_ignnk and not self.is_dit and not self.is_pristi and is_train != 0 and (predicted_1 is not None) and (predicted_2 is not None):
             pred_loss_1 = (noise - predicted_1) * target_mask
             pred_loss_2 = (noise - predicted_2) * target_mask
             pred_loss = ((pred_loss_1 ** 2).sum() + (pred_loss_2 ** 2).sum()) / 2 
@@ -554,6 +599,10 @@ class Diffusion_base(nn.Module):
                         # print(f"attn spat: {attn_spat.shape}")
                         if attn_spat is not None:
                             avg_attn_spat += attn_spat
+                    elif self.is_pristi:
+                        total_input = diff_input.reshape(B, 2, -1, L)
+                        predicted = self.diffmodel(total_input, side_info, t, None)
+                        avg_attn_spat = 0
                     elif self.is_dit:
                         if self.is_separate:
                             inputs = {
@@ -653,6 +702,10 @@ class Diffusion_base(nn.Module):
                         # print(f"attn spat: {attn_spat.shape}")
                         if attn_spat is not None:
                             avg_attn_spat += attn_spat
+                    elif self.is_pristi:
+                        total_input = diff_input.reshape(B, 2, -1, L)
+                        predicted = self.diffmodel(total_input, side_info, t, None)
+                        avg_attn_spat = 0
                     elif self.is_dit:
                         if self.is_separate:
                             inputs = {
@@ -822,7 +875,11 @@ class Diffusion_base(nn.Module):
         A_q = None
         A_h = None
 
-        side_info = None
+        if self.is_pristi:
+            side_info = self.get_side_info(observed_tp, cond_mask)
+        else:
+            side_info = None
+
         loss_func = self.calc_loss if is_train == 1 else self.calc_loss_valid
         if self.is_separate:
             missing_location = (missing_location - mean_loc) / std_loc
@@ -896,12 +953,16 @@ class Diffusion_base(nn.Module):
             else:
                 cond_mask = gt_mask
                 target_mask = observed_mask - cond_mask
-
-            side_info = None
             
          
             A_q = None
             A_h = None
+
+            if self.is_pristi:
+                side_info = self.get_side_info(observed_tp, cond_mask)
+            else:
+                side_info = None
+
             if self.is_separate:
                 # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
                 missing_location = (missing_location - mean_loc) / std_loc
@@ -1064,10 +1125,14 @@ class DynaSTI_AWN(Diffusion_base):
         super(DynaSTI_AWN, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        
-        observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
-        observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
-        gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
+        if self.is_pristi:
+            observed_data = batch["observed_data_pristi"].to(self.device).float() #.cuda().float()
+            observed_mask = batch["observed_mask_pristi"].to(self.device).float() #.cuda().float()
+            gt_mask = batch["gt_mask_pristi"].to(self.device).float() #.cuda().float()
+        else:
+            observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
+            observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
+            gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
 
         spatial_info = batch["spatial_info"].cuda().float() #.to(self.device).float()
         if self.is_separate:
@@ -1166,10 +1231,14 @@ class DynaSTI_METRLA(Diffusion_base):
         super(DynaSTI_METRLA, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        
-        observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
-        observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
-        gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
+        if self.is_pristi:
+            observed_data = batch["observed_data_pristi"].cuda().float() #.to(self.device).float()
+            observed_mask = batch["observed_mask_pristi"].cuda().float() #.to(self.device).float()
+            gt_mask = batch["gt_mask_pristi"].cuda().float() #.to(self.device).float()
+        else:
+            observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
+            observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
+            gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
 
         spatial_info = batch["spatial_info"].cuda().float() #.to(self.device).float()
         if self.is_separate:
@@ -1368,10 +1437,14 @@ class DynaSTI_PEMSBAY(Diffusion_base):
         super(DynaSTI_PEMSBAY, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        
-        observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
-        observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
-        gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
+        if self.is_pristi:
+            observed_data = batch["observed_data_pristi"].cuda().float() #.to(self.device).float()
+            observed_mask = batch["observed_mask_pristi"].cuda().float() #.to(self.device).float()
+            gt_mask = batch["gt_mask_pristi"].cuda().float() #.to(self.device).float()
+        else:
+            observed_data = batch["observed_data"].cuda().float() #.to(self.device).float()
+            observed_mask = batch["observed_mask"].cuda().float() #.to(self.device).float()
+            gt_mask = batch["gt_mask"].cuda().float() #.to(self.device).float()
 
         spatial_info = batch["spatial_info"].cuda().float() #.to(self.device).float()
         if self.is_separate:

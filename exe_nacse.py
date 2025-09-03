@@ -87,20 +87,20 @@ model_folder = 'saved_models_nacse'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-train(
-    model_diff_saits,
-    config["train"],
-    train_loader,
-    valid_loader=test_loader,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"nacse"
-)
+# train(
+#     model_diff_saits,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"nacse"
+# )
 
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -120,7 +120,7 @@ model_diff_saits = ema.ema_model
 model_ignnk = IGNNK(h=n_steps * n_features, z=128, k=1).to(device=device)
 lr = 1e-04
 max_iter = 5000
-# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk{'' if not is_neighbor else '_neighbor'}.model")
+train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk{'' if not is_neighbor else '_neighbor'}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 
@@ -144,8 +144,8 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1)
-evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=10 if config['is_multi'] else -1)
+evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi)
+evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi)
 
 # d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 

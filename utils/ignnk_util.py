@@ -10,23 +10,28 @@ from sklearn.metrics.pairwise import haversine_distances
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def get_spatial_mask(observed_mask, locations):
+def get_spatial_mask(observed_mask, locations, multi=False):
         # potential_locs = torch.arange(locations.shape[1]) * 1.0
         # chosen_location = int(torch.multinomial(potential_locs, 1)[0])
         cond_mask = observed_mask.clone()
         chosen_locations = []
+        num_indices = torch.randint(2, int(observed_mask.shape[1]/2), (1,)).item()
         for i in range(observed_mask.shape[0]):  # First dimension
              # Second dimension
             # Find valid indices in the 3rd dimension for this (i, j)
             valid_indices = torch.where(torch.any(observed_mask[i, :, :, :].reshape(-1, observed_mask.shape[2] * observed_mask.shape[3]), dim=1))[0]
             if len(valid_indices) > 0:
                 # Randomly select one valid index
-                chosen_location = valid_indices[torch.randint(len(valid_indices), (1,)).item()]
+                if multi:
+                    chosen_location = valid_indices[torch.randint(len(valid_indices), (num_indices,))]
+                else:
+                    chosen_location = valid_indices[torch.randint(len(valid_indices), (1,)).item()]
 
        
                 cond_mask[i, chosen_location, :, :] = 0
                 chosen_locations.append(chosen_location)
-
+        if multi:
+            chosen_locations = np.array(chosen_locations)
         return locations, cond_mask, chosen_locations
 
 def geographical_distance(x=None, to_rad=True):
@@ -83,10 +88,15 @@ def calculate_random_walk_matrix(adj_mx):
     random_walk_mx = d_mat_inv.dot(adj_mx).tocoo()
     return random_walk_mx.toarray()
 
-def get_missing_mask(X_res, obs_data, obs_mask, chosen_locs):
-    missing_data_mask = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
-    X_res_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
-    obs_data_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
+def get_missing_mask(X_res, obs_data, obs_mask, chosen_locs, is_multi=False):
+    if is_multi:
+        missing_data_mask = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], chosen_locs.shape[1]), device=device)
+        X_res_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], chosen_locs.shape[1]), device=device)
+        obs_data_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], chosen_locs.shape[1]), device=device)
+    else:
+        missing_data_mask = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
+        X_res_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
+        obs_data_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
     for i in range(obs_mask.shape[0]):
         missing_data_mask[i] = obs_mask[i, :, chosen_locs[i]].unsqueeze(-1)
         X_res_copy[i] = X_res[i, :, chosen_locs[i]].unsqueeze(-1)
@@ -94,7 +104,7 @@ def get_missing_mask(X_res, obs_data, obs_mask, chosen_locs):
     return X_res_copy, obs_data_copy, missing_data_mask
         
 
-def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, output_path='saved_model_ignnk.model'):
+def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, is_multi=False, output_path='saved_model_ignnk.model'):
 
     # STmodel = IGNNK(h, z, K)  # The graph neural networks
 
@@ -112,7 +122,7 @@ def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, ou
                 observed_data = observed_data.permute(0, 2, 3, 1) # B, N, K, L
                 observed_mask = observed_mask.permute(0, 2, 3, 1) # B, N, K, L
                 spatial_info = train_batch['spatial_info'].to(device).float()
-                locations, cond_mask, chosen_locations = get_spatial_mask(observed_mask, spatial_info)
+                locations, cond_mask, chosen_locations = get_spatial_mask(observed_mask, spatial_info, multi=is_multi)
                 locations = locations[0, :, :2]
                 dist_graph = geographical_distance(locations.cpu().numpy())
                 adj = get_similarity(dist_graph)
@@ -133,7 +143,7 @@ def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, ou
                 # X_res = X_res[:,:,chosen_locations]
                 # observed_data = observed_data[:,:,chosen_locations]
                 # missing_data_mask = observed_mask[:,:,chosen_locations]
-                X_res, observed_data, missing_data_mask = get_missing_mask(X_res, observed_data, observed_mask, chosen_locations)
+                X_res, observed_data, missing_data_mask = get_missing_mask(X_res, observed_data, observed_mask, chosen_locations, is_multi=is_multi)
                 # print(f"X-res: {X_res}\n\nobs data: {observed_data}\n\nmissing: {missing_data_mask}")
                 loss = ((X_res - observed_data) ** 2) * missing_data_mask
                 # print(f"loss: {loss}\n\nmissing mask sum: {missing_data_mask.sum()}")
@@ -179,18 +189,28 @@ def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, ou
                         A_q = torch.from_numpy((calculate_random_walk_matrix(adj).T).astype('float32')).to(device=device)
                         A_h = torch.from_numpy((calculate_random_walk_matrix(adj.T).T).astype('float32')).to(device=device)
 
+                        if is_multi:
+                            _, M, _, _ = missing_data.shape
                         B, N, K, L = observed_data.shape
                         input_data = observed_data.clone()
-                        input_data[:, -1, :, :] = 0.0
+                        if is_multi:
+                            input_data[:, :-M, :, :] = 0.0
+                        else:
+                            input_data[:, -1, :, :] = 0.0
                         input_data = input_data.reshape((B, N, K*L)).permute(0, 2, 1).to(device=device)
                         observed_mask = observed_mask.reshape((B, N, K*L)).permute(0, 2, 1).to(device=device)
                         
                         # loss = STmodel(valid_batch, is_train=0)
                         X_res = STmodel(input_data, A_q, A_h)
                         observed_data = observed_data.reshape((B, N, K*L)).permute(0, 2, 1).to(device=device)
-                        X_res = X_res[:,:,-1]
-                        observed_data = observed_data[:,:,-1]
-                        missing_data_mask = missing_data_mask.reshape((B, K*L))
+                        if is_multi:
+                            X_res = X_res[:,:,:-M]
+                            observed_data = observed_data[:,:,:-M]
+                            missing_data_mask = missing_data_mask.permute(0, 2, 3, 1).reshape((B, K*L, M))
+                        else:
+                            X_res = X_res[:,:,-1]
+                            observed_data = observed_data[:,:,-1]
+                            missing_data_mask = missing_data_mask.reshape((B, K*L))
                         loss = ((X_res - observed_data) ** 2) * missing_data_mask
                         loss = loss.sum() / missing_data_mask.sum()
 

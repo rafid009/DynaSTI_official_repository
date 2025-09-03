@@ -683,7 +683,7 @@ def get_mean_std(dataset_name, filename, mean=None, std=None):
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
                             data=False, noise=False, filename=None, is_yearly=True, n_features=-1, n_steps=366, pattern=None, 
                             mean=None, std=None, partial_bm_config=None, spatial=False, unnormalize=False,
-                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):  
+                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_multi=False):  
     nsample = 50
     if 'CSDI' in models.keys():
         models['CSDI'].eval()
@@ -915,7 +915,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         spat_start = time.time()
                         output_diff_saits = models['SPAT-SADI'].evaluate(test_batch, nsample)
                         spat_end = time.time()
-                        # print(f"spat time: {spat_end-spat_start}s")
+                        print(f"spat time: {spat_end-spat_start}s")
                         if 'CSDI' not in models.keys():
                             samples_diff_saits, c_target, eval_points, observed_points, _, gt_intact, _, _, attn_spat_mean, attn_spat_std = output_diff_saits
                         
@@ -953,7 +953,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     missing_data_loc_temp = test_batch["missing_data_loc"].to(device).float()
                     missing_data_temp = missing_data_temp.permute(0, 2, 3, 1) # B, 1, K, L
                     missing_data_mask_temp = missing_data_mask_temp.permute(0, 2, 3, 1) # B, 1, K, L
-
+                    if is_multi:
+                        _, M, _, _ = missing_data_temp.shape
                     observed_data = torch.cat([observed_data, missing_data_temp], dim=1) # B, N+1, K, L
                     observed_mask = torch.cat([observed_mask, missing_data_mask_temp], dim=1) # B, N+1, K, L
                     locations = torch.cat([spatial_info, missing_data_loc_temp], dim=1) # B, N+1, K, L
@@ -966,7 +967,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
 
                     B, N, K, L = observed_data.shape
                     input_data = observed_data.clone()
-                    input_data[:, -1, :, :] = 0.0
+                    if is_multi:
+                        input_data[:, :-M, :, :] = 0.0
+                    else:
+                        input_data[:, -1, :, :] = 0.0
                     input_data = input_data.reshape((B, N, K*L)).permute(0, 2, 1).to(device=device)
                     
                     # loss = STmodel(valid_batch, is_train=0)
@@ -976,7 +980,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     # print(f"ignnk time: {ignnk_end-ignnk_start}s")
                     if is_separate:
                         # print(f"output: {output_ignnk.shape}")
-                        output_ignnk = output_ignnk.permute(0,2,1)[:,-1,:].reshape((B, 1, K, L)).permute(0, 3, 1, 2)
+                        if is_multi:
+                            output_ignnk = output_ignnk.permute(0,2,1)[:,:-M,:].reshape((B, M, K, L)).permute(0, 3, 1, 2) # B, L, M, K
+                        else:
+                            output_ignnk = output_ignnk.permute(0,2,1)[:,-1,:].reshape((B, 1, K, L)).permute(0, 3, 1, 2)
                     else:
                         output_ignnk = output_ignnk.permute(0,2,1).reshape((B, N, K, L)).permute(0, 3, 1, 2)
 
@@ -1191,9 +1198,14 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         output_interpolation = output_interpolation.rehsape(-1, n_steps, 1 * train_mean.shape[1])
 
                     if 'IGNNK' in models.keys():
-                        output_ignnk = output_ignnk.reshape(-1, n_steps, 1, train_mean.shape[1])
-                        output_ignnk = (output_ignnk * train_std) + train_mean
-                        output_ignnk = output_ignnk.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                        if missing_dims != -1:
+                            output_ignnk = output_ignnk.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                            output_ignnk = (output_ignnk * train_std) + train_mean
+                            output_ignnk = output_ignnk.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                        else:
+                            output_ignnk = output_ignnk.reshape(-1, n_steps, 1, train_mean.shape[1])
+                            output_ignnk = (output_ignnk * train_std) + train_mean
+                            output_ignnk = output_ignnk.reshape(-1, n_steps, 1 * train_mean.shape[1])
 
                     if 'PriSTI' in models.keys():
                         # print(f"mean: {train_mean.shape}")
@@ -1611,7 +1623,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     if 'IGNNK' in models.keys():
                         if is_separate:
                             # print(f"Out ignnk: {output_ignnk.shape}, missing data: {missing_data.shape}, mask: {missing_data_mask.shape}")
-                            output_ignnk = output_ignnk.reshape((output_ignnk.shape[0], output_ignnk.shape[1], output_ignnk.shape[3]))
+                            if is_multi:
+                                output_ignnk = output_ignnk.reshape((output_ignnk.shape[0], output_ignnk.shape[1], output_ignnk.shape[2] * output_ignnk.shape[3]))
+                            else:
+                                output_ignnk = output_ignnk.reshape((output_ignnk.shape[0], output_ignnk.shape[1], output_ignnk.shape[3]))
                             rmse_ignnk = ((output_ignnk - missing_data) * missing_data_mask) ** 2
                             rmse_ignnk = rmse_ignnk.sum().item() / missing_data_mask.sum().item()
                         else:

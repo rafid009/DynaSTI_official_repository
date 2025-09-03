@@ -408,6 +408,9 @@ class NASCE_Dataset(Dataset):
                         self.observed_masks.append(obs_mask)
                         self.gt_masks.append(mask)
 
+                        self.observed_values_pristi.append(obs_val_pristi)
+                        self.observed_masks_pristi.append(obs_mask_pristi)
+                        self.gt_masks_pristi.append(mask_pristi)
 
                         if is_test or is_valid:
                             self.gt_intact.append(values)
@@ -443,6 +446,10 @@ class NASCE_Dataset(Dataset):
             self.observed_values = torch.tensor(np.array(self.observed_values), dtype=torch.float32)
             self.spatial_info = torch.tensor(np.array(self.spatial_info, dtype=np.float64), dtype=torch.float64)
             self.observed_masks = torch.tensor(np.array(self.observed_masks), dtype=torch.float32)
+
+            self.observed_values_pristi = torch.tensor(np.array(self.observed_values_pristi), dtype=torch.float32)
+            self.observed_masks_pristi = torch.tensor(np.array(self.observed_masks_pristi), dtype=torch.float32)
+            self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
             
             if is_test or is_valid:
                 self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
@@ -455,6 +462,7 @@ class NASCE_Dataset(Dataset):
                     self.missing_data = ((self.missing_data.reshape(self.missing_data.shape[0], L, -1, 2) - self.mean) / self.std) * self.missing_data_mask.reshape(self.missing_data_mask.shape[0], L, -1, 2)
                     
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, 2) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, 2)
+            self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
             self.neighbor_location = None #"./data/nacse/neighbors.json"
 
            
