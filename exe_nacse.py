@@ -119,7 +119,11 @@ train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_feat
 config['is_pristi'] = True
 config['is_dit_ca2'] = False
 config['is_separate'] = False
+config['adj_file'] = 'nacse',
+config['train_stations'] = 143,
 config['model']['d_spatial'] = 179
+config['model']['use_guide'] = True
+config['model']['mask_sensor'] = [],
 is_ema = False
 model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 

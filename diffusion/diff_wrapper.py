@@ -113,7 +113,7 @@ class Diffusion_base(nn.Module):
                     num_heads=config['model']['n_head']
                 )
         elif self.is_pristi:
-            # self.train_stations = config['train_stations']
+            self.train_stations = config['train_stations']
             config["side_dim"] = self.emb_total_dim
             self.diffmodel = Guide_diff(
                 config=config,
@@ -253,14 +253,25 @@ class Diffusion_base(nn.Module):
 
     
     def get_spatial_mask(self, observed_mask):
+        if self.is_multi:
+            num_indices = torch.randint(2, int(observed_mask.shape[1]/2), (1,)).item()
+        else:
+            num_indices = 1
         cond_mask = observed_mask.clone() # B, N, K, L
         # rand_mask = self.get_randmask(observed_mask)
         # if is_train == 1:
         #     cond_mask = rand_mask
         # else:
         for i in range(len(cond_mask)):
- 
-            index = np.random.choice(observed_mask.shape[1], size=1, replace=False)
+            # mask_choice = np.random.rand()
+            # if mask_choice > 0.5:
+            #     cond_mask[i] = rand_mask[i]
+            # #     # pass
+            # else:
+            if self.is_pristi:
+                index = np.random.choice(self.train_stations, size=num_indices, replace=False)
+            else:
+                index = np.random.choice(observed_mask.shape[1], size=num_indices, replace=False)
             cond_mask[i,index,:,:] = 0
         
         return cond_mask
@@ -867,7 +878,10 @@ class Diffusion_base(nn.Module):
             if self.is_neighbor:
                 observed_data, observed_mask, cond_mask, spatial_info, missing_data, missing_location, missing_data_mask = self.get_spatial_nodes(observed_data, observed_mask, spatial_info, neighbor_location)
             else:
-                observed_data, observed_mask, spatial_info, cond_mask, missing_data, missing_location, missing_data_mask = self.get_spatial_mask_separate(observed_data, observed_mask, spatial_info)
+                if self.is_separate:
+                    observed_data, observed_mask, spatial_info, cond_mask, missing_data, missing_location, missing_data_mask = self.get_spatial_mask_separate(observed_data, observed_mask, spatial_info)
+                else:
+                    cond_mask = self.get_spatial_mask(observed_mask)
         else:
             cond_mask = self.get_randmask(observed_mask)
             missing_data = None
