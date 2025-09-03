@@ -462,6 +462,7 @@ class NASCE_Dataset(Dataset):
                     self.missing_data = ((self.missing_data.reshape(self.missing_data.shape[0], L, -1, 2) - self.mean) / self.std) * self.missing_data_mask.reshape(self.missing_data_mask.shape[0], L, -1, 2)
                     
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, 2) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, 2)
+            print(f"pristi value: {self.observed_values_pristi.shape}")
             self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
             self.neighbor_location = None #"./data/nacse/neighbors.json"
 
