@@ -114,6 +114,31 @@ ema.load(ema_model_filepath)
 model_diff_saits = ema.ema_model
 
 
+############################## PriSTI ##############################
+config['is_pristi'] = True
+config['is_dit_ca2'] = False
+is_ema = False
+model_diff_saits = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
+
+filename = f"model_pristi_nacse.pth"
+print(f"\nDynaSTI training starts.....\n")
+
+train(
+    model_diff_saits,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"nacse"
+)
+
+
 
 
 ########################## IGNNK ##############################

@@ -1,6 +1,6 @@
 {
     "is_dit_ca2": true,
-    "ddim": true,
+    "ddim": false,
     "ddim_steps": 10,
     "is_multi": true,
     "is_pristi": false,
