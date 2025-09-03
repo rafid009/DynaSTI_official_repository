@@ -883,6 +883,9 @@ class Diffusion_base(nn.Module):
                     observed_data, observed_mask, spatial_info, cond_mask, missing_data, missing_location, missing_data_mask = self.get_spatial_mask_separate(observed_data, observed_mask, spatial_info)
                 else:
                     cond_mask = self.get_spatial_mask(observed_mask)
+                    missing_data = None
+                    missing_data_mask = None
+                    missing_location = None
         else:
             cond_mask = self.get_randmask(observed_mask)
             missing_data = None
