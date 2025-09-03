@@ -503,6 +503,7 @@ class NASCE_Dataset(Dataset):
         if self.is_test:
             s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
             s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
+            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
         if self.is_separate and self.is_test:
             s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, 2)
             s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, 2)
@@ -512,7 +513,7 @@ class NASCE_Dataset(Dataset):
             s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, 2)
-            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
+        
         return s
     
     def __len__(self):
