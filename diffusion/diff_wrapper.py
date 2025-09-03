@@ -113,7 +113,7 @@ class Diffusion_base(nn.Module):
                     num_heads=config['model']['n_head']
                 )
         elif self.is_pristi:
-            self.train_stations = config['train_stations']
+            # self.train_stations = config['train_stations']
             config["side_dim"] = self.emb_total_dim
             self.diffmodel = Guide_diff(
                 config=config,
