@@ -407,7 +407,7 @@ class NASCE_Dataset(Dataset):
                         
                         self.observed_masks.append(obs_mask)
                         self.gt_masks.append(mask)
-
+                        print(f"obs pristi: {obs_mask_pristi.shape}")
                         self.observed_values_pristi.append(obs_val_pristi)
                         self.observed_masks_pristi.append(obs_mask_pristi)
                         self.gt_masks_pristi.append(mask_pristi)
