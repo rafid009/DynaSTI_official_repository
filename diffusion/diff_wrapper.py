@@ -319,15 +319,15 @@ class Diffusion_base(nn.Module):
         B, N, K, L = cond_mask.shape
         cond_mask = cond_mask.reshape(B, -1, L)
         B, K, L = cond_mask.shape
-        print(f"cond mask: {cond_mask.shape}")
-        print(f"side: {observed_tp.shape}")
+        # print(f"cond mask: {cond_mask.shape}")
+        # print(f"side: {observed_tp.shape}")
         time_embed = self.time_embedding(observed_tp, self.emb_time_dim)  # (B,L,emb)
         time_embed = time_embed.unsqueeze(2).expand(-1, -1, K, -1)
         feature_embed = self.embed_layer(
             torch.arange(self.target_dim).to(self.device)
         )  # (K,emb)
         feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1)
-        print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
+        # print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
         side_info = torch.cat([time_embed, feature_embed], dim=-1)  # (B,L,K,*)
         side_info = side_info.permute(0, 3, 2, 1)  # (B,*,K,L)
 
@@ -898,7 +898,8 @@ class Diffusion_base(nn.Module):
         loss_func = self.calc_loss if is_train == 1 else self.calc_loss_valid
         if self.is_separate:
             missing_location = (missing_location - mean_loc) / std_loc
-        spatial_info = (spatial_info - mean_loc) / std_loc
+        if not self.is_pristi:
+            spatial_info = (spatial_info - mean_loc) / std_loc
         return loss_func(observed_data, spatial_info, cond_mask, observed_mask, is_train, side_info=side_info, is_spat=is_spat, missing_data=missing_data, A_q=A_q, A_h=A_h, missing_data_mask=missing_data_mask, missing_location=missing_location)#, adj=adj)
 
     def evaluate(self, batch, n_samples, missing_dims=10):
@@ -984,7 +985,8 @@ class Diffusion_base(nn.Module):
                 # max_loc: mean_loc
                 # min_loc: std_loc
                 # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
-            spatial_info = (spatial_info - mean_loc) / std_loc
+            if not self.is_pristi:
+                spatial_info = (spatial_info - mean_loc) / std_loc
             samples, attn_spat_mean, attn_spat_std = self.impute(observed_data, spatial_info, cond_mask, n_samples, side_info=side_info, A_q=A_q, A_h=A_h, missing_location=missing_location, missing_data_mask=gt_mask, missing_data=missing_data, missing_dims=missing_dims)
 
             for i in range(len(cut_length)):
