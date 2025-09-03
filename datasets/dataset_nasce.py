@@ -523,10 +523,10 @@ class NASCE_Dataset(Dataset):
 
 def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False):
     # np.random.seed(seed=seed)
-    train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+    train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=10 if is_multi else -1)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=10 if is_multi else -1, is_pristi=is_pristi)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
