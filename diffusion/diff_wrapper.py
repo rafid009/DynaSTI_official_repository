@@ -1043,7 +1043,7 @@ class DynaSTI_NASCE(Diffusion_base):
         super(DynaSTI_NASCE, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        if self.is_pristi:
+        if self.is_pristi and "observed_data_pristi" in batch and "observed_mask_pristi" in batch and "gt_mask_pristi" in batch:
             observed_data = batch["observed_data_pristi"].to(self.device).float() #.cuda().float()
             observed_mask = batch["observed_mask_pristi"].to(self.device).float() #.cuda().float()
             gt_mask = batch["gt_mask_pristi"].to(self.device).float() #.cuda().float()
@@ -1165,7 +1165,7 @@ class DynaSTI_AWN(Diffusion_base):
         super(DynaSTI_AWN, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        if self.is_pristi:
+        if self.is_pristi and "observed_data_pristi" in batch and "observed_mask_pristi" in batch and "gt_mask_pristi" in batch:
             observed_data = batch["observed_data_pristi"].to(self.device).float() #.cuda().float()
             observed_mask = batch["observed_mask_pristi"].to(self.device).float() #.cuda().float()
             gt_mask = batch["gt_mask_pristi"].to(self.device).float() #.cuda().float()
@@ -1271,7 +1271,7 @@ class DynaSTI_METRLA(Diffusion_base):
         super(DynaSTI_METRLA, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        if self.is_pristi:
+        if self.is_pristi and "observed_data_pristi" in batch and "observed_mask_pristi" in batch and "gt_mask_pristi" in batch:
             observed_data = batch["observed_data_pristi"].cuda().float() #.to(self.device).float()
             observed_mask = batch["observed_mask_pristi"].cuda().float() #.to(self.device).float()
             gt_mask = batch["gt_mask_pristi"].cuda().float() #.to(self.device).float()
@@ -1477,7 +1477,7 @@ class DynaSTI_PEMSBAY(Diffusion_base):
         super(DynaSTI_PEMSBAY, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        if self.is_pristi:
+        if self.is_pristi and "observed_data_pristi" in batch and "observed_mask_pristi" in batch and "gt_mask_pristi" in batch:
             observed_data = batch["observed_data_pristi"].cuda().float() #.to(self.device).float()
             observed_mask = batch["observed_mask_pristi"].cuda().float() #.to(self.device).float()
             gt_mask = batch["gt_mask_pristi"].cuda().float() #.to(self.device).float()
