@@ -22,6 +22,8 @@
         "d_time": 288,
         "d_spatial": 54,
         "n_feature": 7,
+        "timeemb": 128,
+        "featureemb": 16,
         "d_inner": 128,
         "n_head": 8,
         "n_layers": 4,

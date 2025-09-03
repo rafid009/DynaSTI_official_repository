@@ -21,6 +21,8 @@
         "target_strategy": "spatial",
         "d_time": 30,
         "d_spatial": 143,
+        "timeemb": 128,
+        "featureemb": 16,
         "n_feature": 2,
         "d_inner": 128,
         "n_head": 8,
