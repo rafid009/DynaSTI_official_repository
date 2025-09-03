@@ -3,6 +3,8 @@
     "ddim": false,
     "ddim_steps": 10,
     "is_multi": false,
+    "is_pristi": false,
+    "is_separate": true,
     "train": {
         "epochs": 1000,
         "batch_size": 16,

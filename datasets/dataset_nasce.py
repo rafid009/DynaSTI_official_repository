@@ -248,7 +248,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -267,6 +267,7 @@ class NASCE_Dataset(Dataset):
             self.missing_data_loc = []
         self.is_separate = is_separate
         self.is_test = is_test or is_valid
+        self.is_pristi = is_pristi
 
 
         
@@ -277,8 +278,14 @@ class NASCE_Dataset(Dataset):
             X = np.load("./data/nacse/X_OR_temps_test_train.npy")
 
         else:
-            X = np.load("./data/nacse/X_OR_temps_train.npy")
-        X_loc = np.load("./data/nacse/X_OR_temps_train_loc.npy")
+            if is_pristi:
+                X = np.load(f"./data/nacse/X_OR_temps_total_train.npy")
+            else:
+                X = np.load("./data/nacse/X_OR_temps_train.npy")
+        if is_pristi:
+            X_loc = np.load(f"./data/nacse/X_OR_temps_total_loc.npy")
+        else:
+            X_loc = np.load("./data/nacse/X_OR_temps_train_loc.npy")
         B, L, _ = X.shape
 
         X_ = X.reshape(B, L, -1, n_features)
@@ -407,7 +414,7 @@ class NASCE_Dataset(Dataset):
                         
                         self.observed_masks.append(obs_mask)
                         self.gt_masks.append(mask)
-                        print(f"obs pristi: {obs_mask_pristi.shape}")
+                        # print(f"obs pristi: {obs_mask_pristi.shape}")
                         self.observed_values_pristi.append(obs_val_pristi)
                         self.observed_masks_pristi.append(obs_mask_pristi)
                         self.gt_masks_pristi.append(mask_pristi)
@@ -446,10 +453,10 @@ class NASCE_Dataset(Dataset):
             self.observed_values = torch.tensor(np.array(self.observed_values), dtype=torch.float32)
             self.spatial_info = torch.tensor(np.array(self.spatial_info, dtype=np.float64), dtype=torch.float64)
             self.observed_masks = torch.tensor(np.array(self.observed_masks), dtype=torch.float32)
-
-            self.observed_values_pristi = torch.tensor(np.array(self.observed_values_pristi), dtype=torch.float32)
-            self.observed_masks_pristi = torch.tensor(np.array(self.observed_masks_pristi), dtype=torch.float32)
-            self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
+            if is_test or is_valid:
+                self.observed_values_pristi = torch.tensor(np.array(self.observed_values_pristi), dtype=torch.float32)
+                self.observed_masks_pristi = torch.tensor(np.array(self.observed_masks_pristi), dtype=torch.float32)
+                self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
             
             if is_test or is_valid:
                 self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
@@ -462,9 +469,17 @@ class NASCE_Dataset(Dataset):
                     self.missing_data = ((self.missing_data.reshape(self.missing_data.shape[0], L, -1, 2) - self.mean) / self.std) * self.missing_data_mask.reshape(self.missing_data_mask.shape[0], L, -1, 2)
                     
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, 2) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, 2)
-            print(f"pristi value: {self.observed_values_pristi.shape}")
-            self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
+            # print(f"pristi value: {self.observed_values_pristi.shape}")
+            if is_test or is_valid:
+                self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
             self.neighbor_location = None #"./data/nacse/neighbors.json"
+            if is_valid and is_pristi:
+                self.observed_values = self.observed_values_pristi
+                self.observed_masks = self.observed_masks_pristi
+                self.gt_masks = self.gt_masks_pristi
+                self.observed_masks_pristi = []
+                self.observed_values_pristi = []
+                self.gt_masks_pristi = []
 
            
         
@@ -485,23 +500,26 @@ class NASCE_Dataset(Dataset):
             # "observed_mask_pristi": self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
             # "total_loc": self.total_loc.to(torch.float32)
         }
+        if self.is_test:
+            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
+            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
         if self.is_separate and self.is_test:
             s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, 2)
             s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, 2)
             s['missing_data_loc'] = self.missing_data_loc[index]
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
-            # s['gt_mask_pristi'] = None
+            s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, 2)
-            # s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
+            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
         return s
     
     def __len__(self):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False):
     # np.random.seed(seed=seed)
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

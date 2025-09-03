@@ -115,16 +115,19 @@ model_diff_saits = ema.ema_model
 
 
 ############################## PriSTI ##############################
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=False, is_pristi=True)
 config['is_pristi'] = True
 config['is_dit_ca2'] = False
+config['is_separate'] = False
+config['model']['d_spatial'] = 179
 is_ema = False
-model_diff_saits = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
+model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
 filename = f"model_pristi_nacse.pth"
 print(f"\nDynaSTI training starts.....\n")
 
 train(
-    model_diff_saits,
+    model_pristi,
     config["train"],
     train_loader,
     valid_loader=test_loader,
@@ -144,7 +147,7 @@ train(
 ########################## IGNNK ##############################
 model_ignnk = IGNNK(h=n_steps * n_features, z=128, k=1).to(device=device)
 lr = 1e-04
-max_iter = 5000
+max_iter = 3000
 train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk{'' if not is_neighbor else '_neighbor'}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
@@ -157,13 +160,14 @@ train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folde
 
 models = {
     'SPAT-SADI': model_diff_saits,
-    # 'IGNNK': model_ignnk,
+    'IGNNK': model_ignnk,
     # 'GP': None,
     # 'DK': dk_model,
     'MEAN': None,
+    'PriSTI': model_pristi
 }
 
-name = 'nacse_spatial_dit'
+name = 'spatial_multi'
 mse_folder = f"results_nacse/metric"
 data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")

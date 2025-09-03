@@ -86,7 +86,7 @@ class Diffusion_base(nn.Module):
         self.alpha_torch = torch.tensor(self.alpha_hats).float().unsqueeze(1).unsqueeze(1).unsqueeze(1)
         self.is_dit = config['is_dit'] if 'is_dit' in config else False
         self.is_neighbor = config['is_neighbor'] if 'is_neighbor' in config else False
-        self.is_separate = True
+        self.is_separate = config['is_separate'] if 'is_separate' in config else False
         self.is_ignnk = config['is_ignnk'] if 'is_ignnk' in config else False
         self.is_dit_ca2 = config['is_dit_ca2'] if 'is_dit_ca2' in config else False
         self.ddim = config['ddim'] if 'ddim' in config else False
@@ -974,13 +974,17 @@ class Diffusion_base(nn.Module):
 
             for i in range(len(cut_length)):
                 target_mask[i, ..., 0 : cut_length[i].item()] = 0
-        B, N, K, L = observed_data.shape
-        observed_data = observed_data.reshape(B, N*K, L)
-        if self.is_multi:
-            target_mask = target_mask.reshape(B, missing_dims * K, L)
-        else:
-            target_mask = target_mask.reshape(B, K, L)
-        observed_mask = observed_mask.reshape(B, N*K, L)
+        if not self.is_pristi:
+        
+            B, N, K, L = observed_data.shape
+            observed_data = observed_data.reshape(B, N*K, L)
+
+            if self.is_multi:
+                target_mask = target_mask.reshape(B, missing_dims * K, L)
+            else:
+                target_mask = target_mask.reshape(B, K, L)
+
+            observed_mask = observed_mask.reshape(B, N*K, L)
         if self.is_separate:
             # missing_data_mask = 1.0 - missing_data_mask
             return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, missing_data, missing_data_mask, attn_spat_mean, attn_spat_std
@@ -1025,10 +1029,14 @@ class DynaSTI_NASCE(Diffusion_base):
         super(DynaSTI_NASCE, self).__init__(config, device, n_spatial)
 
     def process_data(self, batch):
-        
-        observed_data = batch["observed_data"].to(self.device).float() #.cuda().float()
-        observed_mask = batch["observed_mask"].to(self.device).float() #.cuda().float()
-        gt_mask = batch["gt_mask"].to(self.device).float() #.cuda().float()
+        if self.is_pristi:
+            observed_data = batch["observed_data_pristi"].to(self.device).float() #.cuda().float()
+            observed_mask = batch["observed_mask_pristi"].to(self.device).float() #.cuda().float()
+            gt_mask = batch["gt_mask_pristi"].to(self.device).float() #.cuda().float()
+        else:
+            observed_data = batch["observed_data"].to(self.device).float() #.cuda().float()
+            observed_mask = batch["observed_mask"].to(self.device).float() #.cuda().float()
+            gt_mask = batch["gt_mask"].to(self.device).float() #.cuda().float()
 
         spatial_info = batch["spatial_info"].to(self.device).float() #.cuda().float()
         if self.is_separate:
@@ -1073,6 +1081,24 @@ class DynaSTI_NASCE(Diffusion_base):
                 mean_loc,
                 std_loc
             )
+        # elif self.is_pristi:
+        #     return (
+        #             observed_data,
+        #             spatial_info,
+        #             observed_mask,
+        #             observed_tp,
+        #             gt_mask,
+        #             None,
+        #             cut_length,
+        #             gt_intact,
+        #             missing_data,
+        #             missing_data_mask,
+        #             missing_data_loc,
+        #             mean_loc,
+        #             std_loc
+        #             # max_loc,
+        #             # min_loc
+        #         )
         elif self.is_separate:
             if self.is_dit_ca2:
                 return (
