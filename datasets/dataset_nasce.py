@@ -266,7 +266,8 @@ class NASCE_Dataset(Dataset):
             self.missing_data_mask = []
             self.missing_data_loc = []
         self.is_separate = is_separate
-        self.is_test = is_test or is_valid
+        self.is_test = is_test
+        self.is_valid = is_valid
         self.is_pristi = is_pristi
 
 
@@ -474,13 +475,6 @@ class NASCE_Dataset(Dataset):
             if is_test or is_valid:
                 self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
             self.neighbor_location = None #"./data/nacse/neighbors.json"
-            if is_valid and is_pristi:
-                self.observed_values = self.observed_values_pristi
-                self.observed_masks = self.observed_masks_pristi
-                self.gt_masks = self.gt_masks_pristi
-                self.observed_masks_pristi = []
-                self.observed_values_pristi = []
-                self.gt_masks_pristi = []
 
            
         
@@ -501,7 +495,7 @@ class NASCE_Dataset(Dataset):
             # "observed_mask_pristi": self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
             # "total_loc": self.total_loc.to(torch.float32)
         }
-        if self.is_test:
+        if self.is_test or self.is_valid:
             s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
             s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
             s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
