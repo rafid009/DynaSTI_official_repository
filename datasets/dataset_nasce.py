@@ -280,6 +280,7 @@ class NASCE_Dataset(Dataset):
         else:
             if is_pristi:
                 X = np.load(f"./data/nacse/X_OR_temps_total_train.npy")
+                print(f"X pristi: {X.shape}")
             else:
                 X = np.load("./data/nacse/X_OR_temps_train.npy")
         if is_pristi:
@@ -289,17 +290,17 @@ class NASCE_Dataset(Dataset):
         B, L, _ = X.shape
 
         X_ = X.reshape(B, L, -1, n_features)
-        if self.is_separate:
-            X = X.reshape(B, L, -1)
+        # if self.is_separate:
+        X = X.reshape(B, L, -1)
 
-        else:
+        # else:
             
-            X_temp = np.zeros((X_.shape[0], X_.shape[1], X_.shape[2] + 1, X_.shape[3]))
-            X_temp[:, :, :X_.shape[2], :] = X_
-            X = X_temp.reshape(B, L, -1)
-            X_loc_ = np.zeros((X_loc.shape[0] + 1, X_loc.shape[1]))
-            X_loc_[:X_loc.shape[0]] = X_loc
-            X_loc = X_loc_
+        #     X_temp = np.zeros((X_.shape[0], X_.shape[1], X_.shape[2] + 1, X_.shape[3]))
+        #     X_temp[:, :, :X_.shape[2], :] = X_
+        #     X = X_temp.reshape(B, L, -1)
+        #     X_loc_ = np.zeros((X_loc.shape[0] + 1, X_loc.shape[1]))
+        #     X_loc_[:X_loc.shape[0]] = X_loc
+        #     X_loc = X_loc_
         
 
         X_temp = np.zeros((X_.shape[0], X_.shape[1], total_stations, X_.shape[3]))
