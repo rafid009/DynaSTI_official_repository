@@ -115,7 +115,7 @@ model_diff_saits = ema.ema_model
 
 
 ############################## PriSTI ##############################
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=False, is_pristi=True)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=True, is_pristi=True)
 config['is_pristi'] = True
 config['is_dit_ca2'] = False
 config['is_separate'] = False
@@ -124,6 +124,7 @@ config['train_stations'] = 143
 config['model']['d_spatial'] = 179
 config['model']['use_guide'] = True
 config['model']['mask_sensor'] = []
+config['train']['lr'] = 1e-05
 is_ema = False
 model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
