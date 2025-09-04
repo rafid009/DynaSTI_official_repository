@@ -126,6 +126,7 @@ config['model']['use_guide'] = True
 config['model']['mask_sensor'] = []
 config['train']['lr'] = 1e-05
 is_ema = False
+print(f"PriSTI config: {config}")
 model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
 filename = f"model_pristi_nacse.pth"
