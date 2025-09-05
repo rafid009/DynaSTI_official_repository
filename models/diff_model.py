@@ -1377,9 +1377,9 @@ class DynaSTI(nn.Module):
                 DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_cross=True) for _ in range(n_spatial_layer)
             ])
 
-            self.spatial_blocks_noise = nn.ModuleList([
-                DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_self=True) for _ in range(n_spatial_layer)
-            ])
+            # self.spatial_blocks_noise = nn.ModuleList([
+            #     DiTBlock(self.config['model']['feature_embed'] + self.config['model']['h_channels'], num_heads, d_k, d_v, mlp_ratio=mlp_ratio, is_self=True) for _ in range(n_spatial_layer)
+            # ])
 
             
 
@@ -1421,6 +1421,9 @@ class DynaSTI(nn.Module):
             for block in self.spatial_blocks:
                 nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
                 nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
+            # for block in self.spatial_blocks_noise:
+            #     nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
+            #     nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
 
         # Zero-out output layers:
         nn.init.constant_(self.final_layer.adaLN_modulation[-1].weight, 0)
@@ -1503,7 +1506,7 @@ class DynaSTI(nn.Module):
             # print(f"noise: {noise.shape}")
             # t3 = t2.repeat(B, 1, 1, 1) # B, L, 1, K+128
             # print(f"after noise t3: {t3.shape}")
-            t3 = t2.reshape(B * L, 1, -1) # B*L, M, K+128
+            # t3 = t2.reshape(B * L, 1, -1) # B*L, M, K+128
             # print(f"t3: {t3.shape}")
         else:
             noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
@@ -1515,7 +1518,7 @@ class DynaSTI(nn.Module):
                 # print(f"spatial noise: {noise.shape}")
                 if self.config['is_multi']:
                     # print(f"noise: {noise.shape}, t3: {t3.shape}")
-                    noise_c = noise + t3 # B*L, M, K+128
+                    noise_c = noise #+ t3 # B*L, M, K+128
                     noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
 
