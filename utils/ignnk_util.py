@@ -98,9 +98,14 @@ def get_missing_mask(X_res, obs_data, obs_mask, chosen_locs, is_multi=False):
         X_res_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
         obs_data_copy = torch.zeros((obs_mask.shape[0], obs_mask.shape[1], 1), device=device)
     for i in range(obs_mask.shape[0]):
-        missing_data_mask[i] = obs_mask[i, :, chosen_locs[i]].unsqueeze(-1)
-        X_res_copy[i] = X_res[i, :, chosen_locs[i]].unsqueeze(-1)
-        obs_data_copy[i] = obs_data[i, :, chosen_locs[i]].unsqueeze(-1)
+        if is_multi:
+            missing_data_mask[i] = obs_mask[i, :, chosen_locs[i]]
+            X_res_copy[i] = X_res[i, :, chosen_locs[i]]
+            obs_data_copy[i] = obs_data[i, :, chosen_locs[i]]
+        else:
+            missing_data_mask[i] = obs_mask[i, :, chosen_locs[i]].unsqueeze(-1)
+            X_res_copy[i] = X_res[i, :, chosen_locs[i]].unsqueeze(-1)
+            obs_data_copy[i] = obs_data[i, :, chosen_locs[i]].unsqueeze(-1)
     return X_res_copy, obs_data_copy, missing_data_mask
         
 
