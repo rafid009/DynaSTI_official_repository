@@ -266,7 +266,7 @@ class NASCE_Dataset(Dataset):
             self.missing_data_mask = []
             self.missing_data_loc = []
         self.is_separate = is_separate
-        self.is_test = is_test
+        self.is_test = is_test or is_valid
         self.is_valid = is_valid
         self.is_pristi = is_pristi
 
