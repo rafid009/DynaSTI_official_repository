@@ -31,7 +31,7 @@ def get_spatial_mask(observed_mask, locations, multi=False):
                 cond_mask[i, chosen_location, :, :] = 0
                 chosen_locations.append(chosen_location)
         if multi:
-            chosen_locations = torch.cat(chosen_locations, dim=0)
+            chosen_locations = torch.stack(chosen_locations, dim=0)
         return locations, cond_mask, chosen_locations
 
 def geographical_distance(x=None, to_rad=True):
