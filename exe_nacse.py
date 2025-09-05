@@ -115,7 +115,7 @@ model_diff_saits = ema.ema_model
 
 
 ############################## PriSTI ##############################
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=True, is_pristi=True)
+train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=True, is_pristi=True)
 config['is_pristi'] = True
 config['is_dit_ca2'] = False
 config['is_separate'] = False
@@ -135,8 +135,8 @@ print(f"\nDynaSTI training starts.....\n")
 # train(
 #     model_pristi,
 #     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
+#     train_loader_pristi,
+#     valid_loader=test_loader_pristi,
 #     foldername=model_folder,
 #     filename=f"{filename}",
 #     is_dit=config['is_dit_ca2'],
