@@ -968,7 +968,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     B, N, K, L = observed_data.shape
                     input_data = observed_data.clone()
                     if is_multi:
-                        input_data[:, :-M, :, :] = 0.0
+                        input_data[:, -M:, :, :] = 0.0
                     else:
                         input_data[:, -1, :, :] = 0.0
                     input_data = input_data.reshape((B, N, K*L)).permute(0, 2, 1).to(device=device)
@@ -981,7 +981,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     if is_separate:
                         # print(f"output: {output_ignnk.shape}")
                         if is_multi:
-                            output_ignnk = output_ignnk.permute(0,2,1)[:,:-M,:].reshape((B, M, K, L)).permute(0, 3, 1, 2) # B, L, M, K
+                            output_ignnk = output_ignnk.permute(0,2,1)[:,-M:,:].reshape((B, M, K, L)).permute(0, 3, 1, 2) # B, L, M, K
                         else:
                             output_ignnk = output_ignnk.permute(0,2,1)[:,-1,:].reshape((B, 1, K, L)).permute(0, 3, 1, 2)
                     else:
