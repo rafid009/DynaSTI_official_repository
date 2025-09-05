@@ -1516,10 +1516,10 @@ class DynaSTI(nn.Module):
                 # print(f"noise: {noise.shape}, c_spat: {c1.shape}")
                 noise, attn_spat = self.spatial_blocks[i](noise, c1) # B*L, N=1, K+128
                 # print(f"spatial noise: {noise.shape}")
-                if self.config['is_multi']:
-                    # print(f"noise: {noise.shape}, t3: {t3.shape}")
-                    noise_c = noise #+ t3 # B*L, M, K+128
-                    noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
+                # if self.config['is_multi']:
+                #     # print(f"noise: {noise.shape}, t3: {t3.shape}")
+                #     noise_c = noise #+ t3 # B*L, M, K+128
+                #     noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
 
         c1 = c1.reshape((B, L, N, -1)) # B, L, N, K+128
