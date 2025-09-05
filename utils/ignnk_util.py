@@ -216,6 +216,7 @@ def train_ignnk(STmodel, learning_rate, max_iter, train_loader, valid_loader, is
                             X_res = X_res[:,:,-1]
                             observed_data = observed_data[:,:,-1]
                             missing_data_mask = missing_data_mask.reshape((B, K*L))
+                        print(f"X_res: {X_res.shape}, observed_data: {observed_data.shape}, missing mask: {missing_data_mask.shape}")
                         loss = ((X_res - observed_data) ** 2) * missing_data_mask
                         loss = loss.sum() / missing_data_mask.sum()
 
