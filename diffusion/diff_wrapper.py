@@ -997,11 +997,12 @@ class Diffusion_base(nn.Module):
 
             for i in range(len(cut_length)):
                 target_mask[i, ..., 0 : cut_length[i].item()] = 0
-        if not self.is_pristi:
         
+        if self.is_pristi:
+            print(f"observed data: {observed_data.shape}, observed_mask: {observed_mask.shape}")
+        if not self.is_pristi:
             B, N, K, L = observed_data.shape
             observed_data = observed_data.reshape(B, N*K, L)
-
             if self.is_multi:
                 target_mask = target_mask.reshape(B, missing_dims * K, L)
             else:
