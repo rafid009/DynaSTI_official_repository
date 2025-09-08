@@ -998,17 +998,20 @@ class Diffusion_base(nn.Module):
             for i in range(len(cut_length)):
                 target_mask[i, ..., 0 : cut_length[i].item()] = 0
         
-        if self.is_pristi:
-            print(f"observed data: {observed_data.shape}, observed_mask: {observed_mask.shape}")
+        # if self.is_pristi:
+        #     print(f"observed data: {observed_data.shape}, observed_mask: {observed_mask.shape}")
+        B, N, K, L = observed_data.shape
+        observed_data = observed_data.reshape(B, N*K, L)
+        observed_mask = observed_mask.reshape(B, N*K, L)
         if not self.is_pristi:
-            B, N, K, L = observed_data.shape
-            observed_data = observed_data.reshape(B, N*K, L)
+            
             if self.is_multi:
                 target_mask = target_mask.reshape(B, missing_dims * K, L)
             else:
                 target_mask = target_mask.reshape(B, K, L)
-
-            observed_mask = observed_mask.reshape(B, N*K, L)
+        else:
+            target_mask = target_mask.reshape(B, N*K, L)
+            
         if self.is_separate:
             # missing_data_mask = 1.0 - missing_data_mask
             return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, missing_data, missing_data_mask, attn_spat_mean, attn_spat_std
