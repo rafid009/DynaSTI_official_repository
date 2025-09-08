@@ -979,6 +979,9 @@ class Diffusion_base(nn.Module):
 
             if self.is_pristi:
                 side_info = self.get_side_info(observed_tp, cond_mask)
+                missing_data = None
+                missing_data_mask = None
+                missing_location = None
             else:
                 side_info = None
 
