@@ -186,7 +186,7 @@ print(f"data folder: {data_folder}")
 filename = (data_file_test, data_file_test_loc, mean_std_file)
 dynamic_rate = -1
 is_subset = False
-evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
 
 # dyn_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 # for dynamic_rate in dyn_rates:
