@@ -97,11 +97,55 @@ model_folder = 'saved_models_metrla'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
+# train(
+#     model_diff_saits,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"metrla"
+# )
+# model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
+# print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
+# # Create EMA handler with the main model
+# ema = EMA(model_diff_saits)
+
+# # Define the file path where the EMA model is saved
+# ema_model_filepath = f"{model_folder}/ema_model_metrla.pth"
+
+# # Load the saved EMA model
+# ema.load(ema_model_filepath)
+# model_diff_saits = ema.ema_model
+
+############################## PriSTI ##############################
+train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=True, is_pristi=True)
+config['is_pristi'] = True
+config['is_dit_ca2'] = False
+config['is_separate'] = False
+config['adj_file'] = 'metr-la'
+config['train_stations'] = 165
+config['model']['d_spatial'] = 207
+config['model']['use_guide'] = True
+config['model']['mask_sensor'] = []
+config['train']['lr'] = 1e-04
+is_ema = False
+print(f"PriSTI config: {config}")
+model_pristi = DynaSTI_METRLA(config, device, n_spatial=n_spatial).to(device)
+
+filename = f"model_pristi_metrla.pth"
+print(f"\nDynaSTI training starts.....\n")
+
 train(
-    model_diff_saits,
+    model_pristi,
     config["train"],
-    train_loader,
-    valid_loader=test_loader,
+    train_loader_pristi,
+    valid_loader=test_loader_pristi,
     foldername=model_folder,
     filename=f"{filename}",
     is_dit=config['is_dit_ca2'],
@@ -111,40 +155,27 @@ train(
     is_ema=is_ema,
     name=f"metrla"
 )
-# model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
-print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
-# Create EMA handler with the main model
-ema = EMA(model_diff_saits)
-
-# Define the file path where the EMA model is saved
-ema_model_filepath = f"{model_folder}/ema_model_metrla.pth"
-
-# Load the saved EMA model
-ema.load(ema_model_filepath)
-model_diff_saits = ema.ema_model
-
-
 
 ########################## IGNNK ##############################
 model_ignnk = IGNNK(h=n_steps * n_features, z=512, k=3).to(device=device)
 lr = 1e-04 # 1e-06
 max_iter = 2000
-train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_metrla.model")
+# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_metrla.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk_metrla.model"))
 
 ########################## DK ##############################
-coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+# coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
+# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
-
-    'SPAT-SADI': model_diff_saits,
-    'IGNNK': model_ignnk,
-    'GP': None,
-    'MEAN': None,
-    'DK': dk_model
+    'PriSTI': model_pristi
+    # 'SPAT-SADI': model_diff_saits,
+    # 'IGNNK': model_ignnk,
+    # 'GP': None,
+    # 'MEAN': None,
+    # 'DK': dk_model
 
 }
 
@@ -153,11 +184,12 @@ data_folder = f"results_metrla/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
+dynamic_rate = -1
+is_subset = False
+evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
 
-evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
-
-dyn_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
-for dynamic_rate in dyn_rates:
-    print(f"dynamic rates: {dynamic_rate}")
-    evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
+# dyn_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
+# for dynamic_rate in dyn_rates:
+#     print(f"dynamic rates: {dynamic_rate}")
+#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
 

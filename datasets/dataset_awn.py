@@ -49,8 +49,8 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
             sample, X_loc_train = dynamic_sensor_selection(sample, X_loc_train, dynamic_rate, L, len(given_features))
             obs_mask = ~np.isnan(sample)
 
-        evals, values, evals_loc, missing_data, missing_data_loc = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
-                                                          X_loc_test=X_loc_test, index=index)
+        evals, values, evals_loc, missing_data, missing_data_loc, evals_pristi, values_pristi = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
+                                                          X_loc_test=X_loc_test, index=index, X_pristi=X_pristi)
 
         missing_data_mask = ~np.isnan(missing_data)
         if feature_idxs is None:
@@ -60,15 +60,15 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
             mask = np.copy(missing_data_mask).reshape((missing_data_mask.shape[0], -1, len(given_features)))
             mask[:,:,feature_idxs] = 0.0
             mask = mask.reshape(shp)
-        # mask_pristi = ~np.isnan(values_pristi)
+        mask_pristi = ~np.isnan(values_pristi)
 
         obs_data = np.nan_to_num(evals, copy=True)
-        # obs_data_pristi = np.nan_to_num(evals_pristi, copy=True)
+        obs_data_pristi = np.nan_to_num(evals_pristi, copy=True)
         missing_data = np.nan_to_num(missing_data, copy=True)
 
-        # obs_mask_pristi = ~np.isnan(evals_pristi)
+        obs_mask_pristi = ~np.isnan(evals_pristi)
         # return obs_data, obs_mask, mask, evals_loc, obs_data_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc
-        return obs_data, obs_mask, mask, evals_loc, values, missing_data, missing_data_mask, missing_data_loc
+        return obs_data, obs_mask, mask, evals_loc, values, missing_data, missing_data_mask, missing_data_loc, obs_data_pristi, mask_pristi, obs_mask_pristi
       
     elif not is_test:
         shp = sample.shape
@@ -157,13 +157,17 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
 def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index):
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
+    X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, 2)
+    X_pristi[:, X_train.shape[1] - 1 + index, :] = X_test.reshape(X_test.shape[0], -1, 2)[:,index,:]
     
     values = X_train.copy()
+    values_pristi = X_pristi.copy()
+    values_pristi[:, X_train.shape[1] - 1 + index, :] = np.nan
 
     X_train = X_train.reshape(X_train.shape[0], -1)
     X_test_missing = X_test_missing.reshape(X_test_missing.shape[0], -1)
     values = values.reshape(X_train.shape[0], -1)
-    return X_train, values, X_loc_train, X_test_missing, X_loc_test_missing
+    return X_train, values, X_loc_train, X_test_missing, X_loc_test_missing, X_pristi, values_pristi
 
 def get_location_index(X_loc, loc):
     index = 0
@@ -456,12 +460,13 @@ class AWN_Dataset(Dataset):
             for i in tqdm(range(X.shape[0])):
                 if is_test or is_valid:
                     is_dynamic = dynamic_rate != -1
-                    obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                    obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc, obs_data_pristi, mask_pristi, obs_mask_pristi = parse_data(X[i], rate, is_test, length, include_features=include_features, \
                                                                         forward_trial=forward_trial, random_trial=random_trial, \
                                                                             pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                 spatial=spatial, X_test=X_test[i], \
                                                                                     X_loc_train=X_loc,\
                                                                                     X_loc_test=X_loc_test, X_pristi=None, is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
+                
                 
                 else:
                     obs_val, obs_mask, mask = parse_data(X[i], rate, False, length, include_features=include_features, \
@@ -469,6 +474,9 @@ class AWN_Dataset(Dataset):
                 
                 if (is_test or is_valid):
                     self.gt_intact.append(values)
+                    self.observed_values_pristi.append(obs_val_pristi)
+                    self.observed_masks_pristi.append(obs_mask_pristi)
+                    self.gt_masks_pristi.append(mask_pristi)
 
                 if obs_mask.sum() == 0 or ((is_test or is_valid) and missing_data_mask.sum() == 0) or ((is_test or is_valid) and (~np.isnan(self.gt_intact) * 1.0).sum() == 0):
                     continue
@@ -500,7 +508,13 @@ class AWN_Dataset(Dataset):
 
             self.observed_masks = torch.tensor(np.array(self.observed_masks), dtype=torch.float32)
 
+
+
             if is_test or is_valid:
+                
+                self.observed_values_pristi = torch.tensor(np.array(self.observed_values_pristi), dtype=torch.float32)
+                self.observed_masks_pristi = torch.tensor(np.array(self.observed_masks_pristi), dtype=torch.float32)
+                self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
                 self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
                 if self.is_separate:
                     self.missing_data = torch.tensor(np.array(self.missing_data), dtype=torch.float32)
@@ -511,6 +525,9 @@ class AWN_Dataset(Dataset):
 
             # print(f"spatial_info: {self.spatial_info.shape}")
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, len(given_features)) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, len(given_features))
+            if is_test or is_valid:
+                self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
+            
             self.neighbor_location = None
             
         
@@ -530,8 +547,14 @@ class AWN_Dataset(Dataset):
             s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, len(given_features))
             s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, len(given_features))
             s['missing_data_loc'] = self.missing_data_loc[index]
+        if self.is_test:
+            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
+            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
+            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
+        
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
+            s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, len(given_features))
         return s

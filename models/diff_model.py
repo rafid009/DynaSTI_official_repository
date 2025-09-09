@@ -1626,6 +1626,8 @@ class Guide_diff(nn.Module):
             self.adj = get_similarity_pemsbay(thr=0.1)
         elif config['adj_file'] == 'nacse':
             self.adj = get_adj_nacse()
+        elif config['adj_file'] == 'awn':
+            self.adj = get_similarity_AWN()
         self.device = device
         self.support = compute_support_gwn(self.adj, device=device)
         self.is_adp = config["diffusion"]["is_adp"]

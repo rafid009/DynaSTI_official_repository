@@ -71,6 +71,36 @@ def get_similarity_NACSE(dist, thr=0.1, include_self=False, force_symmetric=Fals
         adj = sps.coo_matrix(adj)
     return adj
 
+def get_similarity_AWN(dist, thr=0.1, include_self=False, force_symmetric=False, sparse=False):
+    theta = np.std(dist)  # use same theta for both air and air36
+    adj = thresholded_gaussian_kernel(dist, theta=theta, threshold=thr)
+    if not include_self:
+        adj[np.diag_indices_from(adj)] = 0.
+    if force_symmetric:
+        adj = np.maximum.reduce([adj, adj.T])
+    if sparse:
+        import scipy.sparse as sps
+        adj = sps.coo_matrix(adj)
+    return adj
+
+def get_adj_awn(total_stations=67):
+    train_locs = np.load('./data/nacse/zone_8_train_locs.npy')
+    test_locs = np.load('./data/nacse/zone_8_test_locs.npy')
+    locations = np.zeros((total_stations * 2, 2))
+    # print(f"train locs: {train_locs.shape}")
+    for i in range(total_stations):
+        if i < train_locs.shape[0]:
+            locations[2*i] = train_locs[i, :2]
+            locations[2*i+1] = train_locs[i, :2]
+        else:
+            locations[2*i] = test_locs[i - train_locs.shape[0], :2]
+            locations[2*i+1] = test_locs[i - train_locs.shape[0], :2]
+    # locations[:train_locs.shape[0], :] = train_locs[:, :2]
+    # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
+    res = geographical_distance(locations)
+    adj = get_similarity_AWN(res)
+    return adj
+
 def get_adj_nacse(total_stations=179):
     train_locs = np.load('./data/nacse/X_OR_temps_train_loc.npy')
     test_locs = np.load('./data/nacse/X_OR_temps_test_loc.npy')
