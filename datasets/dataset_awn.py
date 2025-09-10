@@ -544,7 +544,7 @@ class AWN_Dataset(Dataset):
             # print(f"spatial_info: {self.spatial_info.shape}")
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, len(given_features)) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, len(given_features))
             if is_test or is_valid:
-                self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
+                self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, len(given_features)) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, len(given_features))
             
             self.neighbor_location = None
             
@@ -566,9 +566,9 @@ class AWN_Dataset(Dataset):
             s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, len(given_features))
             s['missing_data_loc'] = self.missing_data_loc[index]
         if self.is_test:
-            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
-            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
-            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
+            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, len(given_features))
+            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, len(given_features))
+            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, len(given_features))
         
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
