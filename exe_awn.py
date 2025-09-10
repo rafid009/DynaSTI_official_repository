@@ -170,13 +170,13 @@ train(
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
 lr = 1e-05 # 1e-06
 max_iter = 2000
-train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
+# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 
 ########################## DK ##############################
-coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+# coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
+# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
