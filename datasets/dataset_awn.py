@@ -482,7 +482,7 @@ class AWN_Dataset(Dataset):
                                                                             pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                 spatial=spatial, X_test=X_test[i], \
                                                                                     X_loc_train=X_loc,\
-                                                                                    X_loc_test=X_loc_test, X_pristi=X_pristi, is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
+                                                                                    X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
                 
                 
                 else:
