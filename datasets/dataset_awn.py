@@ -158,6 +158,7 @@ def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pri
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
     X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, len(given_features))
+    print(f"X_pristi: {X_pristi.shape}, X_test: {X_test.shape}")
     X_pristi[:, X_train.shape[1] - 1 + index, :] = X_test.reshape(X_test.shape[0], -1, len(given_features))[:,index,:]
     
     values = X_train.copy()
@@ -385,6 +386,7 @@ class AWN_Dataset(Dataset):
         else:
             if is_test or is_valid:
                 X_test = np.load(f"./data/awn/zone_{zone}_X_test.npy")
+                print(f"X_test init: {X_test.shape}")
                 X_loc_test = np.load(f"./data/awn/zone_{zone}_test_locs.npy")
                 X = np.load(f"./data/awn/zone_{zone}_X_train_test.npy")
                 if zone == 8:
