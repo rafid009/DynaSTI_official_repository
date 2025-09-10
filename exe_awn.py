@@ -180,7 +180,7 @@ dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, val
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
-    'SPAT-SADI': model_diff_saits,
+    # 'SPAT-SADI': model_diff_saits,
     'MEAN': None,
     'PriSTI': model_pristi
     # 'GP': None,
