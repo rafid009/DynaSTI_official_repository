@@ -990,7 +990,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 if 'PriSTI' in models.keys():
                     with torch.no_grad():
                         output_pristi = models['PriSTI'].evaluate(test_batch, nsample)
-                        samples_pristi, c_target_pristi, eval_points_pristi, observed_points_pristi, _, _, _, _, _, _ = output_pristi
+                        samples_pristi, c_target_pristi, eval_points_pristi, observed_points_pristi, _, gt_intact, _, _, _, _ = output_pristi
                         samples_pristi = samples_pristi.permute(0, 1, 3, 2)
                         samples_pristi_mean = samples_pristi.mean(dim=1)
                         c_target_pristi = c_target_pristi.permute(0, 2, 1)  # (B,L,K)
