@@ -159,7 +159,7 @@ def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pri
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
     X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, len(given_features))
-    print(f"X_pristi: {X_pristi.shape}, X_test: {X_test.shape}, X_train: {X_train.shape}, index: {index}")
+    # print(f"X_pristi: {X_pristi.shape}, X_test: {X_test.shape}, X_train: {X_train.shape}, index: {index}")
     X_pristi[:, X_train.shape[1] - 1 + index, :] = X_test.reshape(X_test.shape[0], -1, len(given_features))[:,index,:]
     
     values = X_train.copy()
@@ -478,7 +478,7 @@ class AWN_Dataset(Dataset):
             for i in tqdm(range(X.shape[0])):
                 if is_test or is_valid:
                     is_dynamic = dynamic_rate != -1
-                    obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc, obs_data_pristi, mask_pristi, obs_mask_pristi = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                    obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc, obs_val_pristi, mask_pristi, obs_mask_pristi = parse_data(X[i], rate, is_test, length, include_features=include_features, \
                                                                         forward_trial=forward_trial, random_trial=random_trial, \
                                                                             pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                 spatial=spatial, X_test=X_test[i], \
