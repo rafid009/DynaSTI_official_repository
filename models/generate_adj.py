@@ -84,8 +84,8 @@ def get_similarity_AWN(dist, thr=0.1, include_self=False, force_symmetric=False,
     return adj
 
 def get_adj_awn(total_stations=67):
-    train_locs = np.load('./data/nacse/zone_8_train_locs.npy')
-    test_locs = np.load('./data/nacse/zone_8_test_locs.npy')
+    train_locs = np.load('./data/awn/zone_8_train_locs.npy')
+    test_locs = np.load('./data/awn/zone_8_test_locs.npy')
     locations = np.zeros((total_stations * 2, 2))
     # print(f"train locs: {train_locs.shape}")
     for i in range(total_stations):
