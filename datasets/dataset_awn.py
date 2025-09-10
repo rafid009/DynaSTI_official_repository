@@ -154,7 +154,7 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
         X_test_loc = X_test_loc.reshape(-1)
     return X_test, X_test_values, X_test_loc
 
-def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index):
+def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pristi):
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
     X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, 2)
@@ -247,7 +247,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, X_test_loc[chosen_location], values
 
 class AWN_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, spatial_slider=False, dynamic_rate=-1, is_subset=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, spatial_slider=False, dynamic_rate=-1, is_subset=False, is_pristi=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -391,11 +391,22 @@ class AWN_Dataset(Dataset):
                     X_test = X_test[:int(len(X_test) * 0.3)]
                     X = X[:int(len(X) * 0.3)]
             else:
-                X = np.load(f"./data/awn/zone_{zone}_X_train.npy")
-            X_loc = np.load(f"./data/awn/zone_{zone}_train_locs.npy")
+                if is_pristi:
+                    X = np.load(f"./data/awn/zone_{zone}_X_total_train.npy")
+                else:
+                    X = np.load(f"./data/awn/zone_{zone}_X_train.npy")
+            if is_pristi:
+                X_loc = np.load(f"./data/awn/zone_{zone}_total_locs.npy")
+            else:
+                X_loc = np.load(f"./data/awn/zone_{zone}_train_locs.npy")
             
             B, L, N, K = X.shape
 
+            X_temp = np.zeros((X_.shape[0], X_.shape[1], total_stations, X_.shape[3]))
+            X_temp[:, :, :X_.shape[2], :] = X_
+            X_pristi = X_temp.reshape(B, L, -1)
+            
+            
             X_ = X.reshape(B, L, -1, n_features)
             if self.is_separate:
                 X = X.reshape(B, L, -1)
@@ -465,7 +476,7 @@ class AWN_Dataset(Dataset):
                                                                             pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                 spatial=spatial, X_test=X_test[i], \
                                                                                     X_loc_train=X_loc,\
-                                                                                    X_loc_test=X_loc_test, X_pristi=None, is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
+                                                                                    X_loc_test=X_loc_test, X_pristi=X_pristi, is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset)
                 
                 
                 else:
@@ -563,11 +574,11 @@ class AWN_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7):
-    train_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone)
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, is_pristi=False):
+    train_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_pristi=is_pristi)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone)
+    test_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_pristi=is_pristi)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
@@ -577,7 +588,7 @@ def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, mis
     return train_loader, test_loader
 
 
-def get_testloader_awn(total_stations, mean_std_file, n_features, n_steps=672, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False):
+def get_testloader_awn(total_stations, mean_std_file, n_features, n_steps=672, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, is_pristi=False):
     np.random.seed(seed=seed)
     if forecasting:
         forward = n_steps - length
