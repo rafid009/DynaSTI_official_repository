@@ -18,7 +18,7 @@
         "schedule": "cosine",
         "layers": 4,
         "channels": 2,
-        "nheads": 4,
+        "nheads": 8,
         "is_adp": true,
         "proj_t": 16,
         "is_cross_t": false,
