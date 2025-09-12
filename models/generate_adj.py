@@ -90,11 +90,20 @@ def get_adj_awn(total_stations=67):
     # print(f"train locs: {train_locs.shape}")
     for i in range(total_stations):
         if i < train_locs.shape[0]:
-            locations[2*i] = train_locs[i, :2]
-            locations[2*i+1] = train_locs[i, :2]
+            locations[7*i] = train_locs[i, :2]
+            locations[7*i+1] = train_locs[i, :2]
+            locations[7*i+2] = train_locs[i, :2]
+            locations[7*i+3] = train_locs[i, :2]
+            locations[7*i+4] = train_locs[i, :2]
+            locations[7*i+5] = train_locs[i, :2]
+            locations[7*i+6] = train_locs[i, :2]
         else:
-            locations[2*i] = test_locs[i - train_locs.shape[0], :2]
-            locations[2*i+1] = test_locs[i - train_locs.shape[0], :2]
+            locations[7*i] = test_locs[i - train_locs.shape[0], :2]
+            locations[7*i+1] = test_locs[i - train_locs.shape[0], :2]
+            locations[7*i+3] = train_locs[i, :2]
+            locations[7*i+4] = train_locs[i, :2]
+            locations[7*i+5] = train_locs[i, :2]
+            locations[7*i+6] = train_locs[i, :2]
     # locations[:train_locs.shape[0], :] = train_locs[:, :2]
     # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
     res = geographical_distance(locations)
@@ -108,7 +117,7 @@ def get_adj_nacse(total_stations=179):
     # print(f"train locs: {train_locs.shape}")
     for i in range(total_stations):
         if i < train_locs.shape[0]:
-            locations[2*i] = train_locs[i, :2]
+            locations[i] = train_locs[i, :2]
             locations[2*i+1] = train_locs[i, :2]
         else:
             locations[2*i] = test_locs[i - train_locs.shape[0], :2]
@@ -140,11 +149,9 @@ def get_adj_metrla(total_stations=207):
     # print(f"train locs: {train_locs.shape}")
     for i in range(total_stations):
         if i < train_locs.shape[0]:
-            locations[2*i] = train_locs[i]
-            locations[2*i+1] = train_locs[i]
+            locations[i] = train_locs[i]
         else:
-            locations[2*i] = test_locs[i - train_locs.shape[0]]
-            locations[2*i+1] = test_locs[i - train_locs.shape[0]]
+            locations[i] = test_locs[i - train_locs.shape[0]]
     # locations[:train_locs.shape[0], :] = train_locs[:, :2]
     # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
     res = geographical_distance(locations)
@@ -173,11 +180,9 @@ def get_adj_pemsbay(total_stations=325):
     # print(f"train locs: {train_locs.shape}")
     for i in range(total_stations):
         if i < train_locs.shape[0]:
-            locations[2*i] = train_locs[i]
-            locations[2*i+1] = train_locs[i]
+            locations[i] = train_locs[i]
         else:
-            locations[2*i] = test_locs[i - train_locs.shape[0]]
-            locations[2*i+1] = test_locs[i - train_locs.shape[0]]
+            locations[i] = test_locs[i - train_locs.shape[0]]
     # locations[:train_locs.shape[0], :] = train_locs[:, :2]
     # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
     res = geographical_distance(locations)
