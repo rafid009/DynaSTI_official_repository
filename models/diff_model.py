@@ -1720,6 +1720,7 @@ class NoiseProject(nn.Module):
         y = x + diffusion_emb
 
         y = self.forward_time(y, base_shape, itp_info)
+        print(f"y: {y.shape}, base_shape: {base_shape.shape}, support: {support.shape}, itp_info: {itp_info.shape}")
         y = self.forward_feature(y, base_shape, support, itp_info)  # (B,channel,K*L)
         y = self.mid_projection(y)  # (B,2*channel,K*L)
 
