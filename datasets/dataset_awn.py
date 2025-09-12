@@ -409,6 +409,7 @@ class AWN_Dataset(Dataset):
             
             
             X_ = X.reshape(B, L, -1, n_features)
+            print(f"X_: {X_.shape}")
             X = X.reshape(B, L, -1)
 
             X_temp = np.zeros((X_.shape[0], X_.shape[1], total_stations, X_.shape[3]))

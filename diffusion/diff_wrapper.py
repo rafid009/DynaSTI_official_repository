@@ -319,7 +319,7 @@ class Diffusion_base(nn.Module):
         B, N, K, L = cond_mask.shape
         cond_mask = cond_mask.reshape(B, -1, L)
         B, K, L = cond_mask.shape
-        # print(f"cond mask: {cond_mask.shape}")
+        print(f"cond mask: {cond_mask.shape}")
         # print(f"side: {observed_tp.shape}")
         time_embed = self.time_embedding(observed_tp, self.emb_time_dim)  # (B,L,emb)
         time_embed = time_embed.unsqueeze(2).expand(-1, -1, K, -1)
