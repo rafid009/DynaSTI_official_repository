@@ -100,10 +100,10 @@ def get_adj_awn(total_stations=67):
         else:
             locations[7*i] = test_locs[i - train_locs.shape[0], :2]
             locations[7*i+1] = test_locs[i - train_locs.shape[0], :2]
-            locations[7*i+3] = train_locs[i, :2]
-            locations[7*i+4] = train_locs[i, :2]
-            locations[7*i+5] = train_locs[i, :2]
-            locations[7*i+6] = train_locs[i, :2]
+            locations[7*i+3] = train_locs[i - train_locs.shape[0], :2]
+            locations[7*i+4] = train_locs[i - train_locs.shape[0], :2]
+            locations[7*i+5] = train_locs[i - train_locs.shape[0], :2]
+            locations[7*i+6] = train_locs[i - train_locs.shape[0], :2]
     # locations[:train_locs.shape[0], :] = train_locs[:, :2]
     # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
     res = geographical_distance(locations)
