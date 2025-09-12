@@ -319,7 +319,7 @@ class Diffusion_base(nn.Module):
         B, N, K, L = cond_mask.shape
         cond_mask = cond_mask.reshape(B, -1, L)
         B, K, L = cond_mask.shape
-        print(f"cond mask: {cond_mask.shape}")
+        # print(f"cond mask: {cond_mask.shape}")
         # print(f"side: {observed_tp.shape}")
         time_embed = self.time_embedding(observed_tp, self.emb_time_dim)  # (B,L,emb)
         time_embed = time_embed.unsqueeze(2).expand(-1, -1, K, -1)
@@ -327,7 +327,7 @@ class Diffusion_base(nn.Module):
             torch.arange(self.target_dim).to(self.device)
         )  # (K,emb)
         feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1)
-        print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
+        # print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
         side_info = torch.cat([time_embed, feature_embed], dim=-1)  # (B,L,K,*)
         side_info = side_info.permute(0, 3, 2, 1)  # (B,*,K,L)
 
