@@ -1621,9 +1621,9 @@ class Guide_diff(nn.Module):
         if config["adj_file"] == 'AQI36':
             self.adj = get_adj_AQI36()
         elif config["adj_file"] == 'metr-la':
-            self.adj = get_similarity_metrla(thr=0.1)
+            self.adj = get_adj_metrla()
         elif config["adj_file"] == 'pems-bay':
-            self.adj = get_similarity_pemsbay(thr=0.1)
+            self.adj = get_adj_pemsbay()
         elif config['adj_file'] == 'nacse':
             self.adj = get_adj_nacse()
         elif config['adj_file'] == 'awn':

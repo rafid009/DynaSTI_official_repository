@@ -119,8 +119,8 @@ def get_adj_nacse(total_stations=179):
     adj = get_similarity_NACSE(res)
     return adj
 
-def get_similarity_metrla(thr=0.1, force_symmetric=False, sparse=False):
-    dist = np.load('./data/metr_la/metr_la_dist.npy')
+def get_similarity_metrla(dist, thr=0.1, force_symmetric=False, sparse=False):
+    # dist = np.load('./data/metr_la/metr_la_dist.npy')
     finite_dist = dist.reshape(-1)
     finite_dist = finite_dist[~np.isinf(finite_dist)]
     sigma = finite_dist.std()
@@ -133,9 +133,27 @@ def get_similarity_metrla(thr=0.1, force_symmetric=False, sparse=False):
         adj = sps.coo_matrix(adj)
     return adj
 
+def get_adj_metrla(total_stations=207):
+    train_locs = np.load('./data/metr-la/X_train_locs.npy')
+    test_locs = np.load('./data/metr-la/X_test_locs.npy')
+    locations = np.zeros((total_stations * 1, 2))
+    # print(f"train locs: {train_locs.shape}")
+    for i in range(total_stations):
+        if i < train_locs.shape[0]:
+            locations[2*i] = train_locs[i]
+            locations[2*i+1] = train_locs[i]
+        else:
+            locations[2*i] = test_locs[i - train_locs.shape[0]]
+            locations[2*i+1] = test_locs[i - train_locs.shape[0]]
+    # locations[:train_locs.shape[0], :] = train_locs[:, :2]
+    # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
+    res = geographical_distance(locations)
+    adj = get_similarity_metrla(res)
+    return adj
 
-def get_similarity_pemsbay(thr=0.1, force_symmetric=False, sparse=False):
-    dist = np.load('./data/pems_bay/pems_bay_dist.npy')
+
+def get_similarity_pemsbay(dist, thr=0.1, force_symmetric=False, sparse=False):
+    # dist = np.load('./data/pems_bay/pems_bay_dist.npy')
     finite_dist = dist.reshape(-1)
     finite_dist = finite_dist[~np.isinf(finite_dist)]
     sigma = finite_dist.std()
@@ -148,6 +166,23 @@ def get_similarity_pemsbay(thr=0.1, force_symmetric=False, sparse=False):
         adj = sps.coo_matrix(adj)
     return adj
 
+def get_adj_pemsbay(total_stations=325):
+    train_locs = np.load('./data/pems_bay/X_train_locs.npy')
+    test_locs = np.load('./data/pems_bay/X_test_locs.npy')
+    locations = np.zeros((total_stations * 1, 2))
+    # print(f"train locs: {train_locs.shape}")
+    for i in range(total_stations):
+        if i < train_locs.shape[0]:
+            locations[2*i] = train_locs[i]
+            locations[2*i+1] = train_locs[i]
+        else:
+            locations[2*i] = test_locs[i - train_locs.shape[0]]
+            locations[2*i+1] = test_locs[i - train_locs.shape[0]]
+    # locations[:train_locs.shape[0], :] = train_locs[:, :2]
+    # locations[train_locs.shape[0]:, :] = test_locs[:, :2]
+    res = geographical_distance(locations)
+    adj = get_similarity_pemsbay(res)
+    return adj
 
 # in Graph-wavenet
 def asym_adj(adj):
