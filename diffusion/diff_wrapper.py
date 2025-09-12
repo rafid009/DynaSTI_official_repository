@@ -327,7 +327,7 @@ class Diffusion_base(nn.Module):
             torch.arange(self.target_dim).to(self.device)
         )  # (K,emb)
         feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1)
-        # print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
+        print(f"time: {time_embed.shape} and feat: {feature_embed.shape}")
         side_info = torch.cat([time_embed, feature_embed], dim=-1)  # (B,L,K,*)
         side_info = side_info.permute(0, 3, 2, 1)  # (B,*,K,L)
 
