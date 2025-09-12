@@ -115,14 +115,14 @@ if not os.path.isdir(model_folder):
 # model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
-ema = EMA(model_diff_saits)
+# ema = EMA(model_diff_saits)
 
-# Define the file path where the EMA model is saved
-ema_model_filepath = f"{model_folder}/ema_model_pemsbay.pth"
+# # Define the file path where the EMA model is saved
+# ema_model_filepath = f"{model_folder}/ema_model_pemsbay.pth"
 
-# Load the saved EMA model
-ema.load(ema_model_filepath)
-model_diff_saits = ema.ema_model
+# # Load the saved EMA model
+# ema.load(ema_model_filepath)
+# model_diff_saits = ema.ema_model
 
 ############################## PriSTI ##############################
 train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=2, missing_ratio=0.02, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_pristi=True)
