@@ -136,7 +136,7 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
         X_test_loc = X_test_loc.reshape(-1)
     return X_test, X_test_values, X_test_loc
 
-def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index):
+def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pristi):
     X_train = X_train.reshape(X_train.shape[0], -1, 1)
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
