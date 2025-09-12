@@ -33,16 +33,20 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
             sample, X_loc_train = dynamic_sensor_selection(sample, X_loc_train, dynamic_rate, L, 1)
             obs_mask = ~np.isnan(sample)
 
-        evals, values, evals_loc, missing_data, missing_data_loc = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
-                                                          X_loc_test=X_loc_test, index=index)
+        evals, values, evals_loc, missing_data, missing_data_loc, evals_pristi, values_pristi = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
+                                                          X_loc_test=X_loc_test, index=index, X_pristi=X_pristi)
 
         missing_data_mask = ~np.isnan(missing_data)
         mask = np.zeros_like(missing_data)
+        mask_pristi = ~np.isnan(values_pristi)
+
+        obs_data_pristi = np.nan_to_num(evals_pristi, copy=True)
 
         obs_data = np.nan_to_num(evals, copy=True)
         missing_data = np.nan_to_num(missing_data, copy=True)
+        obs_mask_pristi = ~np.isnan(evals_pristi)
 
-        return obs_data, obs_mask, mask, evals_loc, values, missing_data, missing_data_mask, missing_data_loc
+        return obs_data, obs_mask, mask, evals_loc, values, missing_data, missing_data_mask, missing_data_loc, obs_data_pristi, mask_pristi, obs_mask_pristi
       
     elif not is_test:
         shp = sample.shape
@@ -133,15 +137,21 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
     return X_test, X_test_values, X_test_loc
 
 def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index):
+    X_train = X_train.reshape(X_train.shape[0], -1, 1)
     X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, len(given_features))[:, index,:], axis=1)
     X_loc_test_missing = np.expand_dims(X_loc_test[index,:], axis=0)
-    
+    X_pristi = X_pristi.reshape(X_pristi.shape[0], -1, 1)
+    # print(f"X_pristi: {X_pristi.shape}, X_test: {X_test.shape}, X_train: {X_train.shape}, index: {index}")
+    X_pristi[:, X_train.shape[1] - 1 + index, :] = X_test.reshape(X_test.shape[0], -1, 1)[:,index,:]
+
     values = X_train.copy()
+    values_pristi = X_pristi.copy()
+    values_pristi[:, X_train.shape[1] - 1 + index, :] = np.nan
     
     X_train = X_train.reshape(X_train.shape[0], -1)
     X_test_missing = X_test_missing.reshape(X_test_missing.shape[0], -1)
     values = values.reshape(X_train.shape[0], -1)
-    return X_train, values, X_loc_train, X_test_missing, X_loc_test_missing
+    return X_train, values, X_loc_train, X_test_missing, X_loc_test_missing, X_pristi, values_pristi
 
 def get_location_index(X_loc, loc):
     index = 0
@@ -222,7 +232,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, X_test_loc[chosen_location], values
 
 class PEMSBAY_Dataset(Dataset):
-    def __init__(self, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, is_neighbor=False, spatial_choice=None, is_separate=False, dynamic_rate=-1) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, is_neighbor=False, spatial_choice=None, is_separate=False, dynamic_rate=-1, is_pristi=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -252,16 +262,25 @@ class PEMSBAY_Dataset(Dataset):
             X = np.load(f"{folder}/X_test_train.npy")
             # print(f"X: {X.shape}")
         else:
-            X = np.load(f"{folder}/X_train.npy")
-        X_loc = np.load(f"{folder}/X_train_locs.npy")
+            if is_pristi:
+                X = np.load(f"{folder}/X_total_train.npy")
+            else:
+                X = np.load(f"{folder}/X_train.npy")
+        if is_pristi:
+            X_loc = np.load(f"{folder}/X_total_locs.npy")
+        else:
+            X_loc = np.load(f"{folder}/X_train_locs.npy")
         # print(f"X: {X.shape}\nX_loc: {X_loc.shape}")
         B, L, N = X.shape
         K = 1
-
+        X_ = X.reshape(B, L, -1, n_features)
         X = X.reshape(B, L, -1)
         
         print(f"X: {X.shape}")
 
+        X_temp = np.zeros((X_.shape[0], X_.shape[1], total_stations, X_.shape[3]))
+        X_temp[:, :, :X_.shape[2], :] = X_
+        X_pristi = X_temp.reshape(B, L, -1)
 
         self.eval_length = X.shape[1]
 
@@ -308,12 +327,12 @@ class PEMSBAY_Dataset(Dataset):
         for i in tqdm(range(X.shape[0])):
             if is_test or is_valid:
                 is_dynamic = dynamic_rate != -1
-                obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                obs_val, obs_mask, mask, X_loc_temp, values, missing_data, missing_data_mask, missing_data_loc, obs_val_pristi, mask_pristi, obs_mask_pristi = parse_data(X[i], rate, is_test, length, include_features=include_features, \
                                                                     forward_trial=forward_trial, random_trial=random_trial, \
                                                                         pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                             spatial=spatial, X_test=X_test[i], \
                                                                                 X_loc_train=X_loc,\
-                                                                                X_loc_test=X_loc_test, X_pristi=None, is_dynamic=is_dynamic, dynamic_rate=dynamic_rate)
+                                                                                X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate)
             
             else:
                 obs_val, obs_mask, mask = parse_data(X[i], rate, False, length, include_features=include_features, \
@@ -326,6 +345,10 @@ class PEMSBAY_Dataset(Dataset):
 
             if (is_test or is_valid):
                 self.gt_intact.append(values)
+                self.observed_values_pristi.append(obs_val_pristi)
+                self.observed_masks_pristi.append(obs_mask_pristi)
+                self.gt_masks_pristi.append(mask_pristi)
+
             self.observed_values.append(obs_val)
             if is_test or is_valid:
                 self.spatial_info.append(X_loc_temp)
@@ -351,6 +374,9 @@ class PEMSBAY_Dataset(Dataset):
         self.observed_masks = torch.tensor(np.array(self.observed_masks), dtype=torch.float32)
         
         if is_test or is_valid:
+            self.observed_values_pristi = torch.tensor(np.array(self.observed_values_pristi), dtype=torch.float32)
+            self.observed_masks_pristi = torch.tensor(np.array(self.observed_masks_pristi), dtype=torch.float32)
+            self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
             self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
             if self.is_separate:
                 self.missing_data = torch.tensor(np.array(self.missing_data), dtype=torch.float32)
@@ -361,6 +387,8 @@ class PEMSBAY_Dataset(Dataset):
 
         
         self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, len(given_features)) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, len(given_features))
+        if is_test or is_valid:
+            self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, len(given_features)) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, len(given_features))
         self.neighbor_location = None # "./data/nacse/neighbors.json"
         
         
@@ -380,8 +408,14 @@ class PEMSBAY_Dataset(Dataset):
             s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, len(given_features))
             s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, len(given_features))
             s['missing_data_loc'] = self.missing_data_loc[index]
+        if self.is_test:
+            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, len(given_features))
+            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, len(given_features))
+            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, len(given_features))
+        
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
+            s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, len(given_features))
         return s
@@ -390,12 +424,12 @@ class PEMSBAY_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_pristi=False):
     # np.random.seed(seed=seed)
-    train_dataset = PEMSBAY_Dataset(mean_std_file, n_features, rate=0.0001, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+    train_dataset = PEMSBAY_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = PEMSBAY_Dataset(mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+    test_dataset = PEMSBAY_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
@@ -405,12 +439,12 @@ def get_dataloader(mean_std_file, n_features, batch_size=16, missing_ratio=0.2, 
     return train_loader, test_loader
 
 
-def get_testloader_pemsbay(mean_std_file, n_features, n_steps=288, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1):
+def get_testloader_pemsbay(total_stations, mean_std_file, n_features, n_steps=288, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1):
     np.random.seed(seed=seed)
     if forecasting:
         forward = n_steps - length
-        test_dataset = PEMSBAY_Dataset(mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, forward_trial=forward, pattern=pattern, partial_bm_config=partial_bm_config)
+        test_dataset = PEMSBAY_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, forward_trial=forward, pattern=pattern, partial_bm_config=partial_bm_config)
     else:
-        test_dataset = PEMSBAY_Dataset(mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
+        test_dataset = PEMSBAY_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
     return test_loader
