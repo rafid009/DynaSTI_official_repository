@@ -17,7 +17,7 @@
         "num_steps": 50, 
         "schedule": "cosine",
         "layers": 4,
-        "channels": 2,
+        "channels": 4,
         "nheads": 2,
         "is_adp": true,
         "proj_t": 16,
