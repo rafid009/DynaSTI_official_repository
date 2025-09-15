@@ -148,20 +148,20 @@ model_pristi = DynaSTI_AWN(config, device, n_spatial=n_spatial).to(device)
 filename = f"model_pristi_awn.pth"
 print(f"\nDynaSTI training starts.....\n")
 
-train(
-    model_pristi,
-    config["train"],
-    train_loader_pristi,
-    valid_loader=test_loader_pristi,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"awn"
-)
+# train(
+#     model_pristi,
+#     config["train"],
+#     train_loader_pristi,
+#     valid_loader=test_loader_pristi,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"awn"
+# )
 
 # model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
