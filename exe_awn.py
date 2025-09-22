@@ -85,6 +85,10 @@ try:
 except Exception as e:
     print(f"Error reading the configuration file '{config_file}': {e}")
     sys.exit(1)
+no_se = not config['ablation']['se']
+no_te = not config['ablation']['te']
+no_fe = not config['ablation']['fe']
+
 model_diff_saits = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(device)
 if torch.cuda.device_count() > 1:
     # print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -129,6 +133,49 @@ ema_model_filepath = f"{model_folder}/ema_model_awn.pth"
 # Load the saved EMA model
 ema.load(ema_model_filepath)
 model_diff_saits = ema.ema_model
+
+##################### FFT DynaSTI #######################
+latent_seq_dim = 16
+
+config['model']['d_time'] = 2 * latent_seq_dim + 2
+
+
+config['epoch'] = 600
+config['fft'] = True
+n_iters = 100
+lr = 0.01
+random = True
+
+model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(device)
+
+filename = f"model_dynasti_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
+print(f"\nDynaSTI FFT training starts.....\n")
+
+train(
+    model_diff_saits_fft,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
+    autoencoder=None, #autoencoder,
+    latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
+)
+
+ema = EMA(model_diff_saits_fft)
+
+# Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
+
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits_fft = ema.ema_model
 
 ############################## PriSTI ##############################
 train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=2, missing_ratio=0.02, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_pristi=True, zone=zone)
@@ -180,7 +227,8 @@ max_iter = 2000
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
-    # 'SPAT-SADI': model_diff_saits,
+    'DynaSTI-Orig': model_diff_saits,
+    'SPAT-SADI': model_diff_saits_fft,
     'MEAN': None,
     'PriSTI': model_pristi
     # 'GP': None,
@@ -197,14 +245,11 @@ filename = (data_file_test, data_file_test_loc, mean_std_file)
 
 dynamic_rate = -1
 is_subset = False
-evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset)
-evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, data=True)
+evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
+# evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, data=True, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
 
 # dyn_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 # for dynamic_rate in dyn_rates:
 #     print(f"dynamic rate: {dynamic_rate}")
-#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate)
+#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
 
-# # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone)
-# is_subset = True
-# evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_subset=is_subset)

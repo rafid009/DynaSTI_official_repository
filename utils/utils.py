@@ -113,7 +113,8 @@ def train(
     is_spat=False,
     is_ema=False,
     name=None,
-    device=None
+    device=None,
+    latent_size=None
 ):
     # device = torch.device(f"cuda:{dist.get_rank()}")
     if is_dit:
@@ -188,7 +189,7 @@ def train(
                 #     loss = model(train_batch, is_spat=is_spat)
                 # else:
                 # with torch.cuda.amp.autocast():
-                loss = model(train_batch)
+                loss = model(train_batch, latent_size=latent_size)
                 # print(f"loss: {loss.shape}\nloss values: {loss}")
                 if len(loss.shape) > 0:
                     loss = loss.mean()
@@ -250,7 +251,7 @@ def train(
                 with tqdm(valid_loader, mininterval=5.0, maxinterval=50.0) as it:
                     for batch_no, valid_batch in enumerate(it, start=1):
                         # to_device(valid_batch, device, False)
-                        loss = model(valid_batch, is_train=0)
+                        loss = model(valid_batch, is_train=0, latent_size=latent_size)
                         if len(loss.shape) > 0:
                             avg_loss_valid += loss.mean().item()
                         else:
@@ -683,12 +684,16 @@ def get_mean_std(dataset_name, filename, mean=None, std=None):
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
                             data=False, noise=False, filename=None, is_yearly=True, n_features=-1, n_steps=366, pattern=None, 
                             mean=None, std=None, partial_bm_config=None, spatial=False, unnormalize=False,
-                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_multi=False):  
+                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_multi=False, latent_size=None):  
     nsample = 50
     if 'CSDI' in models.keys():
         models['CSDI'].eval()
     if 'SADI' in models.keys():
         models['SADI'].eval()
+
+    if 'DynaSTI-Orig' in models.keys():
+        models['DynaSTI-Orig'] = models['DynaSTI-Orig'].cuda()
+        models['DynaSTI-Orig'].eval()
     if 'SPAT-SADI' in models.keys():
         models['SPAT-SADI'] = models['SPAT-SADI'].cuda()
         models['SPAT-SADI'].eval()
@@ -697,15 +702,16 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
     if 'DK' in models.keys():
         models['DK'].eval()
 
-    results_trials_mse = {'csdi': {}, 'spat-sadi': {}, 'sadi': {}, 'pristi': {}, 'mean': {}, 'mice': {},
+    results_trials_mse = {'csdi': {}, 'spat-sadi': {}, 'spat-sadi-orig': {}, 'sadi': {}, 'pristi': {}, 'mean': {}, 'mice': {},
                            'kriging': {}, 'ignnk': {}, 'interpolation': {}, 'gp': {}, 'dk': {}}
-    results_trials_mae = {'csdi': {}, 'spat-sadi': {}, 'sadi': {}, 'pristi': {}, 'mean': {}, 'mice': {}}
-    results_mse = {'csdi': 0, 'spat-sadi': 0, 'sadi': 0, 'mean': 0, 'pristi': 0, 'mice': 0,
+    results_trials_mae = {'csdi': {}, 'spat-sadi': {}, 'spat-sadi-orig': {}, 'sadi': {}, 'pristi': {}, 'mean': {}, 'mice': {}}
+    results_mse = {'csdi': 0, 'spat-sadi': 0, 'spat-sadi-orig': 0, 'sadi': 0, 'mean': 0, 'pristi': 0, 'mice': 0,
                     'kriging': 0, 'ignnk': 0, 'interpolation': 0, 'gp': 0, 'dk': 0}
     results_mae = {'csdi': 0, 'spat-sadi': 0, 'sadi': 0}
     results_crps = {
         'csdi_trials':{}, 'csdi': 0, 
         'spat-sadi_trials': {}, 'spat-sadi': 0,
+        'spat-sadi-orig_trials': {}, 'spat-sadi-orig': 0,
         'sadi_trials': {}, 'sadi': 0,
         'pristi_trials': {}, 'pristi': 0
         }
@@ -733,6 +739,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             test_loader = get_testloader_synth(filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
         csdi_rmse_avg = 0
         diffsaits_rmse_avg = 0
+        diffsaits_rmse_avg_orig = 0
         ignnk_rmse_avg = 0
         sadi_rmse_avg = 0
         mean_avg_rmse = 0
@@ -754,6 +761,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
 
         csdi_crps_avg = 0
         diffsaits_crps_avg = 0
+        diffsaits_crps_avg_orig = 0
         sadi_crps_avg = 0
         pristi_crps_avg = 0
         trial_miss = 0
@@ -910,10 +918,34 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     dk_end = time.time()
                     # print(f"DK time: {dk_end-dk_start}s")
                 
+                if 'DynaSTI-Orig' in models.keys():
+                    with torch.no_grad():
+                        spat_start = time.time()
+                        output_diff_saits_orig = models['DynaSTI-Orig'].evaluate(test_batch, nsample, autoencoder=autoencoder, latent_size=latent_size)
+                        spat_end = time.time()
+                        print(f"orig time: {(spat_end-spat_start)/batch_size}s")
+                        if 'CSDI' not in models.keys():
+                            samples_diff_saits_orig, c_target, eval_points, observed_points, _, gt_intact, _, _, attn_spat_mean, attn_spat_std = output_diff_saits_orig
+                        
+                            c_target = c_target.permute(0, 2, 1)  # (B,L,K)
+                            eval_points = eval_points.permute(0, 2, 1)
+                            observed_points = observed_points.permute(0, 2, 1)
+                            # if is_separate:
+                                # print(f"missing data: {missing_data.shape}")
+                                # missing_data = missing_data.squeeze(1).permute(0, 2, 1)
+                                # missing_data_mask = missing_data_mask.squeeze(1).permute(0, 2, 1)
+                                # missing_data_loc = test_batch["missing_data_loc"]
+                                # spatial_loc = test_batch['spatial_info']
+                                # print(f"missing data loc in utils: {missing_data_loc}")
+                        else:
+                            samples_diff_saits_orig, _, _, _, _ ,_, _= output_diff_saits_orig
+                        samples_diff_saits_orig = samples_diff_saits_orig.permute(0, 1, 3, 2)
+                        samples_diff_saits_orig_mean = samples_diff_saits_orig.mean(dim=1)
+
                 if 'SPAT-SADI' in models.keys():
                     with torch.no_grad():
                         spat_start = time.time()
-                        output_diff_saits = models['SPAT-SADI'].evaluate(test_batch, nsample)
+                        output_diff_saits = models['SPAT-SADI'].evaluate(test_batch, nsample, latent_size=latent_size)
                         spat_end = time.time()
                         print(f"spat time: {spat_end-spat_start}s")
                         if 'CSDI' not in models.keys():
@@ -1179,6 +1211,22 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         dk_output = (dk_output * train_std) + train_mean
                         dk_output = dk_output.reshape(-1, n_steps, 1 * train_mean.shape[1])
 
+                    if 'DynaSTI-Orig' in models.keys():
+                        # print(f"mean: {train_mean.shape}")
+                        if is_separate:
+                            if missing_dims != -1:
+                                samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                samples_diff_saits_orig_mean = (samples_diff_saits_orig_mean * train_std) + train_mean
+                                samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                            else:
+                                samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, 1, train_mean.shape[1])
+                                samples_diff_saits_orig_mean = (samples_diff_saits_orig_mean * train_std) + train_mean
+                                samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                        else:
+                            samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, n_stations, train_mean.shape[1])
+                            samples_diff_saits_orig_mean = (samples_diff_saits_orig_mean * train_std) + train_mean
+                            samples_diff_saits_orig_mean = samples_diff_saits_orig_mean.reshape(-1, n_steps, n_stations * train_mean.shape[1])
+
                     if 'SPAT-SADI' in models.keys():
                         # print(f"mean: {train_mean.shape}")
                         if is_separate:
@@ -1394,6 +1442,25 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                             #     samples[idx] = samples_csdi_temp.reshape(-1, n_steps, n_stations * train_mean.shape[1])
                             # else:
                             samples[0, idx] = samples_csdi_temp.reshape(-1, n_steps, n_stations * train_mean.shape[1])
+                        
+                        if 'DynaSTI-Orig' in models.keys():
+                            if is_separate:
+                                if missing_dims != -1:
+                                    samples_diff_saits_orig_temp = samples_diff_saits_orig[0, idx].reshape(-1, n_steps, missing_dims, train_mean.shape[1])
+                                    samples_diff_saits_orig_temp = (samples_diff_saits_orig_temp * train_std) + train_mean
+                                    samples_diff_saits_orig[0, idx] = samples_diff_saits_orig_temp.reshape(-1, n_steps, missing_dims * train_mean.shape[1])
+                                else:
+                                    samples_diff_saits_orig_temp = samples_diff_saits_orig[0, idx].reshape(-1, n_steps, 1, train_mean.shape[1])
+                                    samples_diff_saits_orig_temp = (samples_diff_saits_orig_temp * train_std) + train_mean
+                                    samples_diff_saits_orig[0, idx] = samples_diff_saits_orig_temp.reshape(-1, n_steps, 1 * train_mean.shape[1])
+                            else:
+                                samples_diff_saits_orig_temp = samples_diff_saits_orig[0, idx].reshape(-1, n_steps, n_stations, train_mean.shape[1])
+                                # samples_diff_saits_temp = samples_diff_saits[idx].reshape(-1, n_steps, n_stations, train_mean.shape[1])
+                                samples_diff_saits_orig_temp = (samples_diff_saits_orig_temp * train_std) + train_mean
+                                # samples_diff_saits[idx] = samples_diff_saits_temp.reshape(-1, n_steps, n_stations * train_mean.shape[1])
+                                samples_diff_saits_orig[0, idx] = samples_diff_saits_orig_temp.reshape(-1, n_steps, n_stations * train_mean.shape[1])
+                        
+                        
                         if 'SPAT-SADI' in models.keys():
                             if is_separate:
                                 # if not spatial_slider:
@@ -1513,6 +1580,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         results_data[j]['interpolation'] = output_interpolation[0, :, :].cpu().numpy()
                         # else:
                         #     results_data[j]['interpolation'] = output_interpolation.cpu().numpy()
+                    if 'DynaSTI-Orig' in models.keys():
+                        # if not spatial_slider:
+                        results_data[j]['spat-sadi_orig_mean'] = samples_diff_saits_orig_mean[0, :, :].cpu().numpy()
+                        results_data[j]['spat-sadi_samples_orig'] = samples_diff_saits_orig[0].cpu().numpy()
 
                     if 'SPAT-SADI' in models.keys():
                         # if not spatial_slider:
@@ -1593,6 +1664,22 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         interp_rmse_avg += interp_rmse ** 0.5
 
                     ###### DiffSAITS ######
+                    if 'DynaSTI-Orig' in models.keys():
+                        # print(f"sample mean: {samples_diff_saits_mean.shape}\nc_target: {c_target.shape}\neval_points: {eval_points.shape}")
+                        if is_separate:
+                            # print(f"spat-sadi mean: {samples_diff_saits_mean.shape}, missing data: {missing_data.shape}, missing mask: {missing_data_mask.shape}")
+                            rmse_diff_saits_orig = ((samples_diff_saits_orig_mean - missing_data) * missing_data_mask) ** 2
+                            rmse_diff_saits_orig = rmse_diff_saits_orig.sum().item() / missing_data_mask.sum().item()
+                        else:
+                            rmse_diff_saits_orig = ((samples_diff_saits_orig_mean - c_target) * eval_points) ** 2
+                            rmse_diff_saits_orig = rmse_diff_saits_orig.sum().item() / eval_points.sum().item()
+                        diffsaits_rmse_avg_orig += rmse_diff_saits_orig ** 0.5
+                        if is_separate:
+                            diff_saits_crps_orig = calc_quantile_CRPS(missing_data, samples_diff_saits_orig, missing_data_mask, 0, 1)
+                        else:
+                            diff_saits_crps_orig = calc_quantile_CRPS(c_target, samples_diff_saits_orig, eval_points, 0, 1)
+                        diffsaits_crps_avg_orig += diff_saits_crps_orig
+
                     if 'SPAT-SADI' in models.keys():
                         # print(f"sample mean: {samples_diff_saits_mean.shape}\nc_target: {c_target.shape}\neval_points: {eval_points.shape}")
                         # if is_separate and missing_dims != -1:
@@ -1702,6 +1789,13 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 results_trials_mse['interpolation'][trial] = interp_rmse_avg / total_batch #  (batch_size - trial_miss)
                 results_mse['interpolation'] += interp_rmse_avg / total_batch #  (batch_size - trial_miss)
 
+            if 'DynaSTI-Orig' in models.keys():
+                results_trials_mse['spat-sadi-orig'][trial] = diffsaits_rmse_avg_orig / total_batch #  (batch_size - trial_miss)
+                results_mse['spat-sadi-orig'] += diffsaits_rmse_avg_orig / total_batch # (batch_size - trial_miss)
+
+                results_crps['spat-sadi-orig_trials'][trial] = diffsaits_crps_avg_orig / total_batch #  (batch_size - trial_miss)
+                results_crps['spat-sadi-orig'] += diffsaits_crps_avg_orig / total_batch #  (batch_size - trial_miss)
+
             if 'SPAT-SADI' in models.keys():
                 results_trials_mse['spat-sadi'][trial] = diffsaits_rmse_avg / total_batch #  (batch_size - trial_miss)
                 results_mse['spat-sadi'] += diffsaits_rmse_avg / total_batch # (batch_size - trial_miss)
@@ -1761,6 +1855,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
     if not data:
         results_mse['csdi'] /= trials
         results_mse['spat-sadi'] /= trials
+        results_mse['spat-sadi-orig'] /= trials
         results_mse['sadi'] /= trials
         results_mse['mean'] /= trials
         results_mse['pristi'] /= trials
@@ -1779,6 +1874,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         csdi_crps_ci = -1
         diffsaits_trials = -1
         diffsaits_crps_ci = -1
+        diffsaits_trials_orig = -1
+        diffsaits_crps_ci_orig = -1
         ignnk_trials = -1
         pristi_trials = -1
         pristi_crps_ci = -1
@@ -1807,6 +1904,12 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         if 'Interpolation' in models.keys():
             interp_trials = [results_trials_mse['interpolation'][i] for i in results_trials_mse['interpolation'].keys()]
             interp_trials = (z * np.std(interp_trials)) / math.sqrt(len(interp_trials))
+
+        if 'DynaSTI-Orig' in models.keys():
+            diffsaits_trials_orig = [results_trials_mse['spat-sadi-orig'][i] for i in results_trials_mse['spat-sadi-orig'].keys()]
+            diffsaits_trials_orig = (z * np.std(diffsaits_trials_orig)) / math.sqrt(len(diffsaits_trials_orig))
+            diffsaits_crps_ci_orig = [results_crps['spat-sadi-orig_trials'][i] for i in results_crps['spat-sadi-orig_trials'].keys()]
+            diffsaits_crps_ci_orig = (z * np.std(diffsaits_crps_ci_orig)) / math.sqrt(len(diffsaits_crps_ci_orig))
 
         if 'SPAT-SADI' in models.keys():
             diffsaits_trials = [results_trials_mse['spat-sadi'][i] for i in results_trials_mse['spat-sadi'].keys()]
@@ -1854,7 +1957,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             brits_trials = [results_trials_mse['brits'][i] for i in results_trials_mse['brits'].keys()]
             brits_trials = (z * np.std(brits_trials)) / math.sqrt(len(brits_trials))
 
-        print(f"RMSE loss:\n\tCSDI: {results_mse['csdi']} ({csdi_trials})\n\tDynaSTI: {results_mse['spat-sadi']} ({diffsaits_trials})\n\tSADI: {results_mse['sadi']} ({sadi_trials})\n\tMEAN: {results_mse['mean']} ({mean_trials})\n\tPriSTI: {results_mse['pristi']} ({pristi_trials})\n\tMICE: {results_mse['mice']} ({mice_trials})\n\tOKriging: {results_mse['kriging']} ({kriging_trials})\n\tIGNNK: {results_mse['ignnk']} ({ignnk_trials})\n\tInterp: {results_mse['interpolation']} ({interp_trials})\n\tGP: {results_mse['gp']} ({gp_trials})\n\tDeepKriging: {results_mse['dk']} ({dk_trials})")
+        print(f"RMSE loss:\n\tCSDI: {results_mse['csdi']} ({csdi_trials})\n\tFDynaSTI: {results_mse['spat-sadi']} ({diffsaits_trials})\n\tDynaSTI-Orig: {results_mse['spat-sadi-orig']} ({diffsaits_trials_orig})\n\tSADI: {results_mse['sadi']} ({sadi_trials})\n\tMEAN: {results_mse['mean']} ({mean_trials})\n\tPriSTI: {results_mse['pristi']} ({pristi_trials})\n\tMICE: {results_mse['mice']} ({mice_trials})\n\tOKriging: {results_mse['kriging']} ({kriging_trials})\n\tIGNNK: {results_mse['ignnk']} ({ignnk_trials})\n\tInterp: {results_mse['interpolation']} ({interp_trials})\n\tGP: {results_mse['gp']} ({gp_trials})\n\tDeepKriging: {results_mse['dk']} ({dk_trials})")
             #    \
             #   ({diffsaits_trials})\n\tSAITS: {results_mse['saits']} ({saits_trials})\n\tKNN: {results_mse['knn']} ({knn_trials}) \
             #         \n\tMICE: {results_mse['mice']} ({mice_trials})\n\tBRITS: {results_mse['brits']} ({brits_trials})")
@@ -1880,9 +1983,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
 
         results_crps['csdi'] /= trials
         results_crps['spat-sadi'] /= trials
+        results_crps['spat-sadi-orig'] /= trials
         results_crps['sadi'] /= trials
 
-        print(f"CRPS:\n\tCSDI: {results_crps['csdi']} ({csdi_crps_ci})\n\tSPAT-SADI: {results_crps['spat-sadi']} ({diffsaits_crps_ci})\n\tSADI: {results_crps['sadi']} ({sadi_crps_ci})\n\tPriSTI: {results_crps['pristi']} ({pristi_crps_ci})")
+        print(f"CRPS:\n\tCSDI: {results_crps['csdi']} ({csdi_crps_ci})\n\tFDynaSTI: {results_crps['spat-sadi']} ({diffsaits_crps_ci})\n\tDynaSTI-Orig: {results_crps['spat-sadi-orig']} ({diffsaits_crps_ci_orig})\n\tSADI: {results_crps['sadi']} ({sadi_crps_ci})\n\tPriSTI: {results_crps['pristi']} ({pristi_crps_ci})")
 
         fp = open(f"{mse_folder}/mse-trials-random-{random_trial}-forecasting-{forecasting}-blackout-{not (random_trial or forecasting)}_l_{length}_miss_{missing_ratio}_pbm_{-1 if partial_bm_config is None else partial_bm_config['features']}.json", "w")
         json.dump(results_trials_mse, fp=fp, indent=4)

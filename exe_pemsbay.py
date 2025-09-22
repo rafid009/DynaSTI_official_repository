@@ -79,6 +79,11 @@ except Exception as e:
     print(f"Error reading the configuration file '{config_file}': {e}")
     sys.exit(1)
 
+no_se = not config['ablation']['se']
+no_te = not config['ablation']['te']
+no_fe = not config['ablation']['fe']
+
+
 model_diff_saits = DynaSTI_PEMSBAY(config, device, n_spatial=n_spatial) #.to(device)
 if torch.cuda.device_count() > 1:
     # print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -115,14 +120,56 @@ if not os.path.isdir(model_folder):
 # model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
-# ema = EMA(model_diff_saits)
+ema = EMA(model_diff_saits)
 
-# # Define the file path where the EMA model is saved
-# ema_model_filepath = f"{model_folder}/ema_model_pemsbay.pth"
+# Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_pemsbay.pth"
 
-# # Load the saved EMA model
-# ema.load(ema_model_filepath)
-# model_diff_saits = ema.ema_model
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits = ema.ema_model
+
+##################### FFT DynaSTI #######################
+
+latent_seq_dim = 16
+
+config['model']['d_time'] = 2 * latent_seq_dim + 2
+
+config['train']['epochs'] = 600
+config['fft'] = True
+n_iters = 100
+lr = 0.01
+random = True
+model_diff_saits_fft = DynaSTI_PEMSBAY(config, device, n_spatial=n_spatial)
+autoencoder = None
+
+filename = f"model_dynasti_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}.pth"
+print(f"\nDynaSTI FFT training starts.....\n")
+
+train(
+    model_diff_saits_fft,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}",
+    autoencoder=None, #autoencoder,
+    latent_size=(latent_seq_dim, 1, n_iters, lr, random)
+)
+ema = EMA(model_diff_saits_fft)
+
+# Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}.pth"
+
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits_fft = ema.ema_model
 
 ############################## PriSTI ##############################
 train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=2, missing_ratio=0.02, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_pristi=True)
@@ -174,7 +221,8 @@ max_iter = 2000
 
 models = {
     'PriSTI': model_pristi,
-    # 'SPAT-SADI': model_diff_saits,
+    'SPAT-SADI': model_diff_saits_fft,
+    'DynaSTI-Orig': model_diff_saits,
     # 'IGNNK': model_ignnk,
     # 'GP': None,
     # 'MEAN': None,
@@ -190,7 +238,7 @@ dynamic_rate = -1
 dyn_rates = [-1]#, 0.1, 0.3, 0.5, 0.7, 0.9]
 for dynamic_rate in dyn_rates:
     print(f"dynamic rates: {dynamic_rate}")
-    # evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate)
-    evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
+    evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
+    # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
 
 # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)

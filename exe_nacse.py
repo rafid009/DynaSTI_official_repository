@@ -113,6 +113,55 @@ ema_model_filepath = f"{model_folder}/ema_model_nacse.pth"
 ema.load(ema_model_filepath)
 model_diff_saits = ema.ema_model
 
+##################### FFT DynaSTI #######################
+
+latent_seq_dim = 7
+
+config['model']['d_time'] = 2 * latent_seq_dim + 2
+
+config['train']['epochs'] = 800
+config['fft'] = True
+n_iters = 200
+lr = 0.001
+random = False
+model_diff_saits_fft = DynaSTI_NASCE(config, device, n_spatial=n_spatial)
+autoencoder = None
+
+filename = f"model_dynasti_fft_nacse.pth"
+print(f"\nDynaSTI FFT training starts.....\n")
+print(f"config: {config}")
+
+# model_diff_saits_fft.load_state_dict(torch.load(f"{model_folder}/{filename}"))
+#
+
+
+train(
+    model_diff_saits_fft,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"fft_nacse",
+    autoencoder=None, #autoencoder,
+    latent_size=(latent_seq_dim, 2, n_iters, lr, random)
+)
+
+ema = EMA(model_diff_saits_fft)
+
+# # Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_fft_nacse.pth"
+
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits_fft = ema.ema_model
+
+
 
 ############################## PriSTI ##############################
 train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=is_multi, is_pristi=True)
@@ -165,7 +214,8 @@ model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 
 models = {
-    # 'SPAT-SADI': model_diff_saits,
+    'DynaSTI-Orig': model_diff_saits,
+    'SPAT-SADI': model_diff_saits_fft,
     # 'IGNNK': model_ignnk,
     # 'GP': None,
     # 'DK': dk_model,
@@ -179,8 +229,8 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-# evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi)
-evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi)
+evaluate_imputation_all(models=models, trials=10, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
+# evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
 
 # d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 
@@ -189,7 +239,7 @@ evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_featu
 
 # for dynamic_rate in d_rates:
 #     print(f"dynamic rate: {dynamic_rate}")
-#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, is_subset=is_subset)
+#     evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, is_subset=is_subset, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
 
 # is_subset = True
 # evaluate_imputation_all(models=models, trials=20, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_subset=is_subset)
