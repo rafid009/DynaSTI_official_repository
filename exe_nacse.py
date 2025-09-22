@@ -148,7 +148,6 @@ train(
     is_spat=False,
     is_ema=is_ema,
     name=f"fft_nacse",
-    autoencoder=None, #autoencoder,
     latent_size=(latent_seq_dim, 2, n_iters, lr, random)
 )
 

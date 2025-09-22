@@ -159,7 +159,6 @@ train(
     is_spat=False,
     is_ema=is_ema,
     name=f"fft_metrla{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}",
-    autoencoder=None, #autoencoder,
     latent_size=(latent_seq_dim, 1, n_iters, lr, random)
 )
 ema = EMA(model_diff_saits_fft)

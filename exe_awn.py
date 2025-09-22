@@ -164,7 +164,6 @@ train(
     is_spat=False,
     is_ema=is_ema,
     name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
-    autoencoder=None, #autoencoder,
     latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
 )
 
