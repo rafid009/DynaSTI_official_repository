@@ -95,7 +95,7 @@ class Diffusion_base(nn.Module):
         self.is_multi = config['is_multi'] if 'is_multi' in config.keys() else False
         self.is_pristi = config['is_pristi'] if 'is_pristi' in config.keys() else False
         self.is_fft = config['fft'] if 'fft' in config else False
-        
+
         if self.is_pristi:
             self.embed_layer = nn.Embedding(
                 num_embeddings=config['model']['d_spatial']*config['model']['n_feature'], embedding_dim=self.emb_feature_dim
@@ -1081,7 +1081,8 @@ class Diffusion_base(nn.Module):
             B, N, K, L = observed_data.shape
             observed_data_copy = observed_data.clone()
             observed_mask_copy = observed_mask.clone()
-            missing_data_copy = missing_data.clone()
+            if not self.is_pristi:
+                missing_data_copy = missing_data.clone()
             # missing_data_mask_copy = missing_data_mask.clone()
             
             if self.is_fft:
@@ -1155,7 +1156,8 @@ class Diffusion_base(nn.Module):
         # B, N, K, L = observed_data.shape
         observed_data = observed_data_copy
         observed_mask = observed_mask_copy
-        missing_data = missing_data_copy
+        if not self.is_pristi:
+            missing_data = missing_data_copy
         # missing_data_mask = missing_data_mask_copy
         observed_data = observed_data.reshape(B, N*K, L)
         observed_mask = observed_mask.reshape(B, N*K, L)
