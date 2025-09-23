@@ -181,6 +181,7 @@ config['model']['d_spatial'] = 325
 config['model']['use_guide'] = True
 config['model']['mask_sensor'] = []
 config['train']['lr'] = 1e-04
+config['fft'] = False
 is_ema = False
 print(f"PriSTI config: {config}")
 model_pristi = DynaSTI_PEMSBAY(config, device, n_spatial=n_spatial).to(device)

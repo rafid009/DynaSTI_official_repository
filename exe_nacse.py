@@ -173,6 +173,7 @@ config['model']['d_spatial'] = 179
 config['model']['use_guide'] = True
 config['model']['mask_sensor'] = []
 config['train']['lr'] = 1e-05
+config['fft'] = False
 is_ema = False
 print(f"PriSTI config: {config}")
 model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
