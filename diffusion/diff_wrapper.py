@@ -7,7 +7,7 @@ import json
 import scipy.sparse as sp
 import math
 from sklearn.metrics.pairwise import haversine_distances
-from models.fft_model import fit_linear_fft_1
+from models.fft_model import fit_linear_fft_1, LinearFFTCoeffs
 
 def cosine_beta_schedule(timesteps: int, dtype=torch.float32):
     """
@@ -1147,7 +1147,16 @@ class Diffusion_base(nn.Module):
                 gt_mask = gt_mask.permute(0, 1, 3, 2) # B, 1, K_, L_
                 missing_data = missing_data.permute(0, 1, 3, 2) # B, 1, K_, L_
             samples, attn_spat_mean, attn_spat_std = self.impute(observed_data, spatial_info, cond_mask, n_samples, side_info=side_info, A_q=A_q, A_h=A_h, missing_location=missing_location, missing_data_mask=gt_mask, missing_data=missing_data, missing_dims=missing_dims)
-
+            if self.is_fft:
+                imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device)
+                for i in range(samples.shape[1]):
+                    sample = samples[:, i] # B, K_, L_
+                    cosine, sine, intercept, slope = sample[:, :, :latent_size[0]], sample[:, :, latent_size[0]:2 * latent_size[0]], sample[:, :, -2], sample[:, :, -1]
+                    # print(f"sample: {sample.shape}, cosine: {cosine.shape}, sine: {sine.shape}, intercept: {intercept.shape}, slope: {slope.shape}")
+                    coeff = LinearFFTCoeffs(intercept, slope, cosine, sine).to(device=self.device)
+                    sample = result_missing_data.decoder(coeff)
+                    imputed_samples[:, i] = sample.permute(0, 2, 1) # B, K, L
+                samples = imputed_samples
             for i in range(len(cut_length)):
                 target_mask[i, ..., 0 : cut_length[i].item()] = 0
         
