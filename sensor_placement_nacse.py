@@ -201,7 +201,7 @@ def compute_global_uncertainty_mean(samples, eps=1e-8):
     # Reshape back to (N_sensors, L)
     joint_entropy = joint_entropy.view(N_sensors, L)
 
-    # ✅ Mean over time and sensors → single scalar
+    # Mean over time and sensors → single scalar
     global_entropy_mean = joint_entropy.mean()
 
     return global_entropy_mean

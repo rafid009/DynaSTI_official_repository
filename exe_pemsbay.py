@@ -103,20 +103,20 @@ model_folder = 'saved_models_pemsbay'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-# train(
-#     model_diff_saits,
-#     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"pemsbay"
-# )
+train(
+    model_diff_saits,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"pemsbay"
+)
 # model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -191,33 +191,33 @@ model_pristi = DynaSTI_PEMSBAY(config, device, n_spatial=n_spatial).to(device)
 filename = f"model_pristi_pemsbay.pth"
 print(f"\nDynaSTI training starts.....\n")
 
-# train(
-#     model_pristi,
-#     config["train"],
-#     train_loader_pristi,
-#     valid_loader=test_loader_pristi,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"pemsbay"
-# )
+train(
+    model_pristi,
+    config["train"],
+    train_loader_pristi,
+    valid_loader=test_loader_pristi,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"pemsbay"
+)
 
 ########################## IGNNK ##############################
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
 lr = 1e-06 # 1e-06
 max_iter = 2000
-# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_pemsbay.model")
+train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_pemsbay.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk_pemsbay.model"))
 
 ########################## DK ##############################
-# coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
-# dk_model = get_model(n_features)
+coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
+dk_model = train_deep_kriging(1e-4, 700, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 
 
@@ -225,10 +225,10 @@ models = {
     'PriSTI': model_pristi,
     'SPAT-SADI': model_diff_saits_fft,
     'DynaSTI-Orig': model_diff_saits,
-    # 'IGNNK': model_ignnk,
+    'IGNNK': model_ignnk,
     # 'GP': None,
-    # 'MEAN': None,
-    # 'DK': dk_model
+    'MEAN': None,
+    'DK': dk_model
 }
 
 mse_folder = f"results_pemsbay/metric"
@@ -237,7 +237,7 @@ print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
 dynamic_rate = -1
-dyn_rates = [-1]#, 0.1, 0.3, 0.5, 0.7, 0.9]
+dyn_rates = [-1, 0.1, 0.3, 0.5, 0.7, 0.9]
 for dynamic_rate in dyn_rates:
     print(f"dynamic rates: {dynamic_rate}")
     evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))

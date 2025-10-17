@@ -108,20 +108,20 @@ model_folder = 'saved_models_awn'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-# train(
-#     model_diff_saits,
-#     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"awn"
-# )
+train(
+    model_diff_saits,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"awn"
+)
 # model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -140,7 +140,7 @@ latent_seq_dim = 16
 config['model']['d_time'] = 2 * latent_seq_dim + 2
 
 
-config['epoch'] = 600
+config['train']['epoch'] = 600
 config['fft'] = True
 n_iters = 100
 lr = 0.01
@@ -197,20 +197,20 @@ model_pristi = DynaSTI_AWN(config, device, n_spatial=n_spatial).to(device)
 filename = f"model_pristi_awn.pth"
 print(f"\nDynaSTI training starts.....\n")
 
-# train(
-#     model_pristi,
-#     config["train"],
-#     train_loader_pristi,
-#     valid_loader=test_loader_pristi,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"awn"
-# )
+train(
+    model_pristi,
+    config["train"],
+    train_loader_pristi,
+    valid_loader=test_loader_pristi,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"awn"
+)
 
 # model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
@@ -219,23 +219,23 @@ print(f"\nDynaSTI training starts.....\n")
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
 lr = 1e-05 # 1e-06
 max_iter = 2000
-# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
+train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 
 ########################## DK ##############################
-# coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-# dk_model = train_deep_kriging(1e-3, 500, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
-# dk_model = get_model(n_features)
+coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
+dk_model = train_deep_kriging(1e-3, 600, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
     'DynaSTI-Orig': model_diff_saits,
     'SPAT-SADI': model_diff_saits_fft,
     'MEAN': None,
-    'PriSTI': model_pristi
+    'PriSTI': model_pristi,
     # 'GP': None,
-    # 'IGNNK': model_ignnk,
-    # 'DK': dk_model
+    'IGNNK': model_ignnk,
+    'DK': dk_model
 
 }
 
