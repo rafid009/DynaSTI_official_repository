@@ -238,7 +238,7 @@ for i, test_batch in enumerate(test_loader):
         init_test_batch['gt_mask'] = torch.zeros((1, n_steps, N, 2))
         init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, N, 2))
         with torch.no_grad():
-            outputs_init = model_diff_saits.evaluate(init_test_batch, nsample)
+            outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=N)
             samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
             samples_init = samples_init.permute(0, 1, 3, 2)
             samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
@@ -252,7 +252,7 @@ for i, test_batch in enumerate(test_loader):
         temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].detach(), new_locations], dim=0)
         temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].detach()
 
-        outputs_temp = model_diff_saits.evaluate(temp_test_batch, nsample)
+        outputs_temp = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
         samples_temp, _, _, _, _, _, _, _, _, _ = outputs_init
         samples_temp = samples_temp.permute(0, 1, 3, 2) # B, T, L, M*K
         B, T, L, D = samples_temp.shape
