@@ -247,10 +247,10 @@ for i, test_batch in enumerate(test_loader):
         
         temp_test_batch = test_batch.copy()
 
-        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'], samples_init_mean], dim=-2).detach()
-        new_locations = new_locations.requires_grad_(True)
-        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].detach(), new_locations], dim=0)
-        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].detach()
+        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2).detach()
+        new_locations = new_locations.to(device).requires_grad_(True)
+        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device).detach(), new_locations], dim=0)
+        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device).detach()
 
         outputs_temp = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
         samples_temp, _, _, _, _, _, _, _, _, _ = outputs_init
@@ -267,7 +267,7 @@ for i, test_batch in enumerate(test_loader):
         with torch.no_grad():  # Disable autograd while updating the input
             new_locations -= lr * grad_uncertainty_location
 
-        
+        prev_grad_uncertainty = grad_uncertainty_location
         df_new_locations = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
         # df_input_locations = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     
