@@ -217,7 +217,7 @@ folder = 'results_map'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
-model_diff_saits.eval()
+# model_diff_saits.eval()
 for i, test_batch in enumerate(test_loader):
     input_locations = test_batch['spatial_info'][0]
     missing_locations = test_batch['missing_data_loc'][0]
