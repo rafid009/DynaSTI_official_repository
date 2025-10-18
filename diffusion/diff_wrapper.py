@@ -783,11 +783,11 @@ class Diffusion_base(nn.Module):
                     all_samples_attn_spat = torch.cat([all_samples_attn_spat, avg_attn_spat.unsqueeze(0)], dim=0)
             if self.is_separate and (self.is_dit or self.is_dit_ca2):
                 if self.is_multi:
-                    imputed_samples[:, i] = current_sample.detach().reshape(B, missing_dims * K, L)
+                    imputed_samples[:, i] = current_sample.reshape(B, missing_dims * K, L)
                 else:
-                    imputed_samples[:, i] = current_sample.detach().reshape(B, K, L)
+                    imputed_samples[:, i] = current_sample.reshape(B, K, L)
             else:
-                imputed_samples[:, i] = current_sample.detach().reshape(B, N*K, L)
+                imputed_samples[:, i] = current_sample.reshape(B, N*K, L)
         if len(all_samples_attn_spat) != 0:
             attn_spat_mean = all_samples_attn_spat.mean(0)
             attn_spat_std = all_samples_attn_spat.std(0)
