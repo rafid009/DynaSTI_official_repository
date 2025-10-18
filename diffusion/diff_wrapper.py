@@ -539,14 +539,14 @@ class Diffusion_base(nn.Module):
     
     def impute(self, observed_data, spatial_info, cond_mask, n_samples, side_info=None, A_q=None, A_h=None, missing_location=None, missing_data_mask=None, missing_data=None, eta=0.000, missing_dims=10):
         B, N, K, L = observed_data.shape
-        if self.is_separate and (self.is_dit or self.is_dit_ca2):
-            if self.is_multi:
-                imputed_samples = torch.zeros(B, n_samples, missing_dims * K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
-            else:
-                imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
-        else:
-            imputed_samples = torch.zeros(B, n_samples, N*K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
-
+        # if self.is_separate and (self.is_dit or self.is_dit_ca2):
+        #     if self.is_multi:
+        #         imputed_samples = torch.zeros(B, n_samples, missing_dims * K, L).to(self.device) #.cuda() #.to(self.device)
+        #     else:
+        #         imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device) #.cuda() #.to(self.device)
+        # else:
+        #     imputed_samples = torch.zeros(B, n_samples, N*K, L).to(self.device) #.cuda() #.to(self.device)
+        imputed_samples = []
         if self.ddim:
             steps = torch.linspace(self.num_steps - 1, 0, self.ddim_steps + 1, dtype=torch.float32)[1:].long()
             steps = steps.to(self.device)
@@ -749,7 +749,7 @@ class Diffusion_base(nn.Module):
                             'missing_mask': total_mask
                         }
                         _, _, predicted = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))              
-                    if self.is_separate and (self.is_dit or self.is_dit_ca2 or self.is_dit_ca3):
+                    if self.is_separate and (self.is_dit or self.is_dit_ca2):
                         if self.is_multi:
                             predicted = predicted.reshape(B, missing_dims, K, L)
                         else:
@@ -783,11 +783,15 @@ class Diffusion_base(nn.Module):
                     all_samples_attn_spat = torch.cat([all_samples_attn_spat, avg_attn_spat.unsqueeze(0)], dim=0)
             if self.is_separate and (self.is_dit or self.is_dit_ca2):
                 if self.is_multi:
-                    imputed_samples[:, i] = current_sample.reshape(B, missing_dims * K, L)
+                    # imputed_samples[:, i] = current_sample.reshape(B, missing_dims * K, L)
+                    imputed_samples.append(current_sample.reshape(B, missing_dims * K, L))
                 else:
-                    imputed_samples[:, i] = current_sample.reshape(B, K, L)
+                    # imputed_samples[:, i] = current_sample.reshape(B, K, L)
+                    imputed_samples.append(current_sample.reshape(B, K, L))
             else:
-                imputed_samples[:, i] = current_sample.reshape(B, N*K, L)
+                # imputed_samples[:, i] = current_sample.reshape(B, N*K, L)
+                imputed_samples.append(current_sample.reshape(B, N*K, L))
+        imputed_samples = torch.stack(imputed_samples, dim=1)
         if len(all_samples_attn_spat) != 0:
             attn_spat_mean = all_samples_attn_spat.mean(0)
             attn_spat_std = all_samples_attn_spat.std(0)
