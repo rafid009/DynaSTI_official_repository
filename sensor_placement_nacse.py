@@ -88,20 +88,20 @@ model_folder = 'saved_models_nacse'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-train(
-    model_diff_saits,
-    config["train"],
-    train_loader,
-    valid_loader=test_loader,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"nacse_multi"
-)
+# train(
+#     model_diff_saits,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"nacse_multi"
+# )
 
 # print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -125,7 +125,7 @@ models = {
 }
 mse_folder = f"results_nacse/metric"
 data_folder = f"results_nacse/data"
-evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
+evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=10 if config['is_multi'] else -1, is_multi=is_multi) #, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
 
 
 
