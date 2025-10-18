@@ -781,6 +781,7 @@ class Diffusion_base(nn.Module):
                     all_samples_attn_spat = avg_attn_spat.unsqueeze(0)
                 else:
                     all_samples_attn_spat = torch.cat([all_samples_attn_spat, avg_attn_spat.unsqueeze(0)], dim=0)
+            print(f"current sample: {current_sample.requires_grad}")
             if self.is_separate and (self.is_dit or self.is_dit_ca2):
                 if self.is_multi:
                     # imputed_samples[:, i] = current_sample.reshape(B, missing_dims * K, L)
