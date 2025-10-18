@@ -1052,6 +1052,7 @@ class Diffusion_base(nn.Module):
             
             if self.is_separate:
                 cond_mask = observed_mask
+                print(f"gt mask: {gt_mask.shape}, missing data mask: {missing_data_mask.shape}")
                 target_mask = torch.logical_xor(missing_data_mask, gt_mask).float()
             else:
                 cond_mask = gt_mask
