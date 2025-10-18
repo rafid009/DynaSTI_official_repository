@@ -248,6 +248,8 @@ for i, test_batch in enumerate(test_loader):
         temp_test_batch = test_batch.copy()
 
         temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2).detach()
+        new_obs_mask = torch.ones((1, n_steps, N, 2))
+        temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2).detach()
         new_locations = new_locations.reshape((1, N, 3)).to(device).requires_grad_(True)
         temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device).detach(), new_locations], dim=1)
         temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device).detach()
