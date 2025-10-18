@@ -217,7 +217,7 @@ folder = 'results_map'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
-model_diff_saits.eval()
+# model_diff_saits.eval()
 
 for p in model_diff_saits.parameters():
     p.requires_grad_(False)
