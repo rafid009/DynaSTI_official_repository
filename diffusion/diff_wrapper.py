@@ -713,6 +713,7 @@ class Diffusion_base(nn.Module):
                                 'A_h': A_h
                             }
                         predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
+                        print(f"predicted: {predicted.requires_grad}")
                         # print(f"attn spat: {attn_spat.shape}")
                         if attn_spat is not None:
                             avg_attn_spat += attn_spat
