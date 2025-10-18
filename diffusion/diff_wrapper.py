@@ -1082,7 +1082,7 @@ class Diffusion_base(nn.Module):
             B, N, K, L = observed_data.shape
             observed_data_copy = observed_data.clone()
             observed_mask_copy = observed_mask.clone()
-            if not self.is_pristi:
+            if not self.is_pristi and missing_data is not None:
                 missing_data_copy = missing_data.clone()
             # missing_data_mask_copy = missing_data_mask.clone()
             
@@ -1166,7 +1166,7 @@ class Diffusion_base(nn.Module):
         # B, N, K, L = observed_data.shape
         observed_data = observed_data_copy
         observed_mask = observed_mask_copy
-        if not self.is_pristi:
+        if not self.is_pristi and missing_data is not None:
             missing_data = missing_data_copy
         # missing_data_mask = missing_data_mask_copy
         observed_data = observed_data.reshape(B, N*K, L)
