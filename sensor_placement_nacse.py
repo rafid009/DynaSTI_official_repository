@@ -217,9 +217,11 @@ folder = 'results_map'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
+model_diff_saits.eval()
+
 for p in model_diff_saits.parameters():
     p.requires_grad_(False)
-# model_diff_saits.eval()
+
 for i, test_batch in enumerate(test_loader):
     input_locations = test_batch['spatial_info'][0]
     missing_locations = test_batch['missing_data_loc'][0]
@@ -265,7 +267,7 @@ for i, test_batch in enumerate(test_loader):
         # samples_temp_mean = samples_temp.mean(dim=1)  # (B,L,M*K)
 
         uncertainty = compute_global_uncertainty_mean(samples_temp)
-        grad_uncertainty_location = torch.autograd.grad(uncertainty, new_locations, allow_unused=True, retain_graph=False, create_graph=False)[0]
+        grad_uncertainty_location = torch.autograd.grad(uncertainty, new_locations, retain_graph=False, create_graph=False)[0]
         print(f"test: {i} iter: {j}: uncertainty = {uncertainty}, grad uncertainty: {grad_uncertainty_location}")
         if torch.abs(prev_grad_uncertainty - grad_uncertainty_location) < 0.0001:
             break
