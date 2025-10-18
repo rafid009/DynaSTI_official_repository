@@ -541,11 +541,11 @@ class Diffusion_base(nn.Module):
         B, N, K, L = observed_data.shape
         if self.is_separate and (self.is_dit or self.is_dit_ca2):
             if self.is_multi:
-                imputed_samples = torch.zeros(B, n_samples, missing_dims * K, L).to(self.device) #.cuda() #.to(self.device)
+                imputed_samples = torch.zeros(B, n_samples, missing_dims * K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
             else:
-                imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device) #.cuda() #.to(self.device)
+                imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
         else:
-            imputed_samples = torch.zeros(B, n_samples, N*K, L).to(self.device) #.cuda() #.to(self.device)
+            imputed_samples = torch.zeros(B, n_samples, N*K, L).to(self.device).requires_grad_(True) #.cuda() #.to(self.device)
 
         if self.ddim:
             steps = torch.linspace(self.num_steps - 1, 0, self.ddim_steps + 1, dtype=torch.float32)[1:].long()
