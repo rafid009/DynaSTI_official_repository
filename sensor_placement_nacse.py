@@ -261,7 +261,7 @@ for i, test_batch in enumerate(test_loader):
 
         uncertainty = compute_global_uncertainty_mean(samples_temp)
         grad_uncertainty_location = torch.autograd.grad(uncertainty, new_locations)[0]
-
+        print(f"test: {i} iter: {j}: uncertainty = {uncertainty}")
         if torch.abs(prev_grad_uncertainty - grad_uncertainty_location) < 0.0001:
             break
         with torch.no_grad():  # Disable autograd while updating the input
