@@ -1521,7 +1521,7 @@ class DynaSTI(nn.Module):
                 #     noise_c = noise #+ t3 # B*L, M, K+128
                 #     noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
-
+        print(f"noise: {noise.requires_grad}")
         c1 = c1.reshape((B, L, N, -1)) # B, L, N, K+128
         if self.config['is_multi']:
             noise = noise.reshape((B, L, M, -1)) # B, L, M, K+128
@@ -1571,9 +1571,9 @@ class DynaSTI(nn.Module):
 
             c1 = c1.permute(0, 2, 1, 3) # B, N, L, K + 128
             if self.config['is_multi']:
-                zeros = torch.zeros((B, M, L, c1.shape[-1]), requires_grad=True).cuda() # B, M, L, K + 128
+                zeros = torch.zeros((B, M, L, c1.shape[-1])).cuda() # B, M, L, K + 128
             else:
-                zeros = torch.zeros((B, 1, L, c1.shape[-1]), requires_grad=True).cuda() # B, 1, L, K + 128
+                zeros = torch.zeros((B, 1, L, c1.shape[-1])).cuda() # B, 1, L, K + 128
             c1 = torch.cat([c1, zeros], dim=1) # B, N+1, L, K + 128
             x = self.final_layer(noise, c1) # B, N+1, L, K
 
