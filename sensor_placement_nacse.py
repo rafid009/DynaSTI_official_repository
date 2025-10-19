@@ -82,7 +82,7 @@ filename = f"model_dynasti_nacse_multi.pth"
 print(f"\nDynaSTI training starts.....\n")
 model_folder = 'saved_models_nacse'
 
-model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
+# model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 #
 
 if not os.path.isdir(model_folder):
@@ -105,14 +105,14 @@ if not os.path.isdir(model_folder):
 
 # print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
-# ema = EMA(model_diff_saits)
+ema = EMA(model_diff_saits)
 
-# # Define the file path where the EMA model is saved
-# ema_model_filepath = f"{model_folder}/ema_model_nacse_multi.pth"
+# Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_nacse_multi.pth"
 
-# # Load the saved EMA model
-# ema.load(ema_model_filepath)
-# model_diff_saits = ema.ema_model
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits = ema.ema_model
 
 models = {
     'SPAT-SADI': model_diff_saits,
@@ -217,11 +217,11 @@ folder = 'results_map'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
-model_diff_saits.eval()
+# model_diff_saits.eval()
 
-for p in model_diff_saits.parameters():
-    p.requires_grad_(True)
-    print(f"p: {p.requires_grad}")
+# for p in model_diff_saits.parameters():
+#     p.requires_grad_(True)
+#     print(f"p: {p.requires_grad}")
 
 for i, test_batch in enumerate(test_loader):
     input_locations = test_batch['spatial_info'][0]

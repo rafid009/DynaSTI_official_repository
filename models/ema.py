@@ -8,8 +8,8 @@ class EMA(object):
         # Copy the model to create the EMA model and ensure it's on the same device
         self.ema_model = copy.deepcopy(model).to(self._get_device())
         self.ema_model.eval()  # EMA model is only for inference, so set to eval mode
-        for param in self.ema_model.parameters():
-            param.requires_grad = False  # EMA model parameters are not trainable
+        # for param in self.ema_model.parameters():
+        #     param.requires_grad = False  # EMA model parameters are not trainable
 
     def _get_device(self):
         # Helper function to determine the device of the model parameters
