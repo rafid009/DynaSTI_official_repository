@@ -469,6 +469,7 @@ class Diffusion_base(nn.Module):
                     'A_h': A_h
                 }
             predicted_3, attn_spat = self.diffmodel(inputs, t, is_train)
+            print(f"Calc loss predicted: {predicted_3.requires_grad}")
         elif self.is_pristi:
             # inputs = {
             #     'X': total_input,
@@ -910,7 +911,9 @@ class Diffusion_base(nn.Module):
         if self.is_separate:
             missing_location = (missing_location - mean_loc) / std_loc
         if not self.is_pristi:
+            print(f"In forward spatial info 1: {spatial_info.requires_grad}")
             spatial_info = (spatial_info - mean_loc) / std_loc
+            print(f"In forward spatial info 2: {spatial_info.requires_grad}")
         if self.is_fft:
             B, N, K, L = observed_data.shape
             observed_data = observed_data.permute(0, 1, 3, 2) # B, N, L, K
