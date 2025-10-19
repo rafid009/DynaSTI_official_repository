@@ -1077,7 +1077,7 @@ class Diffusion_base(nn.Module):
                 side_info = None
 
             if self.is_separate:
-                print(f"missing location 1: {missing_location.requires_grad}")
+                print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
                 # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
                 missing_location = (missing_location - mean_loc) / std_loc
                 print(f"missing location 2: {missing_location.requires_grad}")
