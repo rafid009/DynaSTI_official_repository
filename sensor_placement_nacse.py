@@ -218,10 +218,10 @@ if not os.path.isdir(folder):
     os.makedirs(folder)
 
 model_diff_saits.eval()
-
-for p in model_diff_saits.parameters():
-    p.requires_grad_(True)
-    print(f"p: {p.requires_grad}")
+model_diff_saits.requires_grad_(True)
+# for p in model_diff_saits.parameters():
+#     p.requires_grad_(True)
+#     print(f"p: {p.requires_grad}")
 
 for i, test_batch in enumerate(test_loader):
     input_locations = test_batch['spatial_info'][0]
