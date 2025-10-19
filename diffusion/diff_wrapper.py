@@ -1248,11 +1248,11 @@ class DynaSTI_NASCE(Diffusion_base):
 
         spatial_info = batch["spatial_info"].to(self.device).float() #.cuda().float()
         if self.is_separate:
-            missing_data = batch["missing_data"] #.to(self.device).float() if "missing_data" in batch.keys() else None
+            missing_data = batch["missing_data"] if "missing_data" in batch.keys() else None
             if missing_data is not None:
                 missing_data = missing_data.to(self.device).float() 
             # print(f"missing_data in data: {missing_data}")
-            missing_data_mask = batch["missing_data_mask"] #.to(self.device).float() if "missing_data_mask" in batch.keys() else None
+            missing_data_mask = batch["missing_data_mask"] if "missing_data_mask" in batch.keys() else None
             if missing_data_mask is not None:
                 missing_data_mask = missing_data_mask.to(self.device).float()
             missing_data_loc = batch['missing_data_loc'].to(self.device).float() if "missing_data_loc" in batch .keys() else None
