@@ -683,7 +683,7 @@ class Diffusion_base(nn.Module):
                 for t in range(num_steps - 1, -1, -1):
                     if self.is_separate and (self.is_dit or self.is_dit_ca2):
                         cond_obs = observed_data
-                        noisy_target = current_sample
+                        noisy_target = current_sample.requires_grad_(True)
                         total_mask = cond_mask
                     else:
                         
@@ -1271,7 +1271,7 @@ class DynaSTI_NASCE(Diffusion_base):
         # spatial_info = spatial_info.permute(0, 2, 3, 1)
         observed_mask = observed_mask.permute(0, 2, 3, 1) # B, N, K, L
         gt_mask = gt_mask.permute(0, 2, 3, 1) # B, N, K, L
-
+        print(f"In process data: observed data: {observed_data.requires_grad}, observed mask: {observed_mask.requires_grad}, spatial info: {spatial_info.requires_grad}")
 
         cut_length = torch.zeros(len(observed_data)).long().to(self.device) #.cuda() #to(self.device)
         if self.is_ignnk:
