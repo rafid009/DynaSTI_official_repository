@@ -1077,13 +1077,17 @@ class Diffusion_base(nn.Module):
                 side_info = None
 
             if self.is_separate:
+                print(f"missing location 1: {missing_location.requires_grad}")
                 # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
                 missing_location = (missing_location - mean_loc) / std_loc
+                print(f"missing location 2: {missing_location.requires_grad}")
                 # max_loc: mean_loc
                 # min_loc: std_loc
                 # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
             if not self.is_pristi:
+                print(f"spatial info 1: {spatial_info.requires_grad}")
                 spatial_info = (spatial_info - mean_loc) / std_loc
+                print(f"spatial info 2: {spatial_info.requires_grad}")
             
             B, N, K, L = observed_data.shape
             observed_data_copy = observed_data.clone()
