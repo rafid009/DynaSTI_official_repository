@@ -217,7 +217,7 @@ folder = 'results_map'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
-# model_diff_saits.eval()
+model_diff_saits.eval()
 
 # for p in model_diff_saits.parameters():
 #     p.requires_grad_(False)
@@ -251,12 +251,12 @@ for i, test_batch in enumerate(test_loader):
         
         temp_test_batch = test_batch.copy()
 
-        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2) #.detach()
+        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2).requires_grad_(True) #.detach()
         new_obs_mask = torch.ones((1, n_steps, N, 2)).to(device)
-        temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2) #.detach()
+        temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2).requires_grad_(True) #.detach()
         new_locations = new_locations.reshape((1, N, 3)).to(device).detach().requires_grad_(True)
-        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations], dim=1)
-        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
+        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations], dim=1).requires_grad_(True)
+        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device).requires_grad_(True) #.detach()
 
         outputs_temp = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
         samples_temp, _, _, _, _, _, _, _, _, _ = outputs_temp
