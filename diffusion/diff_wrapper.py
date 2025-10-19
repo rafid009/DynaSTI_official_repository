@@ -1263,8 +1263,8 @@ class DynaSTI_NASCE(Diffusion_base):
             gt_intact = None
 
         # if self.is_ignnk or self.is_dit_ca2:
-        mean_loc = batch["mean_loc"].to(self.device).float() #.cuda().float()
-        std_loc = batch['std_loc'].to(self.device).float() #.cuda().float()
+        mean_loc = batch["mean_loc"].to(self.device).float().requires_grad_(True) #.cuda().float()
+        std_loc = batch['std_loc'].to(self.device).float().requires_grad_(True) #.cuda().float()
         # max_loc = batch['max_loc'].cuda().float()
         # min_loc = batch['min_loc'].cuda().float()
         observed_data = observed_data.permute(0, 2, 3, 1) # B, N, K, L
