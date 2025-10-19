@@ -774,6 +774,7 @@ class Diffusion_base(nn.Module):
                         # print(f"noise: {noise}")
                         # print(f"sigma: {sigma}")
                         current_sample += sigma * noise
+                    
                 # print(f"current sample: {current_sample.shape}")
             # current_sample = (1 - cond_mask) * current_sample + cond_mask * observed_data
             
@@ -1038,6 +1039,7 @@ class Diffusion_base(nn.Module):
                         # print(f"noise: {noise}")
                         # print(f"sigma: {sigma}")
                         current_sample += sigma * noise
+                    current_sample.detach().requires_grad_(True)
                 # print(f"current sample: {current_sample.shape}")
             # current_sample = (1 - cond_mask) * current_sample + cond_mask * observed_data
             
