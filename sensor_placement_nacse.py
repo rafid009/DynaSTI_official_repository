@@ -88,20 +88,20 @@ model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-train(
-    model_diff_saits,
-    config["train"],
-    train_loader,
-    valid_loader=test_loader,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"nacse_multi_1"
-)
+# train(
+#     model_diff_saits,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"nacse_multi_1"
+# )
 
 # print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -243,7 +243,7 @@ for i, test_batch in enumerate(test_loader):
         init_test_batch['gt_mask'] = torch.zeros((1, n_steps, N, 2))
         init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, N, 2))
         # with torch.no_grad():
-        outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=N)
+        outputs_init = model_diff_saits.evaluate_grad(init_test_batch, nsample, missing_dims=N)
         samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
         samples_init = samples_init.permute(0, 1, 3, 2)
         samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
@@ -252,14 +252,14 @@ for i, test_batch in enumerate(test_loader):
         
         temp_test_batch = test_batch.copy()
 
-        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2).requires_grad_(True) #.detach()
+        temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2) #.detach()
         new_obs_mask = torch.ones((1, n_steps, N, 2)).to(device)
-        temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2).requires_grad_(True) #.detach()
+        temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2) #.detach()
         new_locations = new_locations.reshape((1, N, 3)).to(device).detach().requires_grad_(True)
-        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations], dim=1).requires_grad_(True)
-        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device).requires_grad_(True) #.detach()
+        temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations], dim=1)
+        temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
 
-        outputs_temp = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
+        outputs_temp = model_diff_saits.evaluate_grad(temp_test_batch, nsample, missing_dims=M)
         samples_temp, _, _, _, _, _, _, _, _, _ = outputs_temp
         samples_temp = samples_temp.permute(0, 1, 3, 2) # B, T, L, M*K
         B, T, L, D = samples_temp.shape

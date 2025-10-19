@@ -1200,6 +1200,207 @@ class Diffusion_base(nn.Module):
             return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, None, None, None, None
 
 
+    def evaluate_grad(self, batch, n_samples, missing_dims=10, latent_size=None):
+        if self.is_ignnk:
+            (
+                observed_data,
+                spatial_info,
+                observed_mask,
+                observed_tp,
+                gt_mask,
+                _,
+                cut_length,
+                gt_intact,
+                mean_loc,
+                std_loc
+            ) = self.process_data(batch)
+        elif self.is_separate:
+            if self.is_dit_ca2:
+                (
+                    observed_data,
+                    spatial_info,
+                    observed_mask,
+                    observed_tp,
+                    gt_mask,
+                    _,
+                    cut_length,
+                    gt_intact,
+                    missing_data,
+                    missing_data_mask,
+                    missing_location,
+                    mean_loc,
+                    std_loc
+                ) = self.process_data(batch)
+            else:
+                (
+                    observed_data,
+                    spatial_info,
+                    observed_mask,
+                    observed_tp,
+                    gt_mask,
+                    _,
+                    cut_length,
+                    gt_intact,
+                    missing_data,
+                    missing_data_mask,
+                    missing_location,
+                    mean_loc,
+                    std_loc
+                ) = self.process_data(batch)
+        else:
+            (
+                observed_data,
+                spatial_info,
+                observed_mask,
+                observed_tp,
+                gt_mask,
+                _,
+                cut_length,
+                gt_intact
+            ) = self.process_data(batch)
+
+        
+            
+        if self.is_separate:
+            cond_mask = observed_mask
+            # print(f"gt mask: {gt_mask.shape}, missing data mask: {missing_data_mask.shape}")
+            target_mask = torch.logical_xor(missing_data_mask, gt_mask).float()
+        else:
+            cond_mask = gt_mask
+            target_mask = observed_mask - cond_mask
+        
+        
+        A_q = None
+        A_h = None
+
+        if self.is_pristi:
+            side_info = self.get_side_info(observed_tp, cond_mask)
+            missing_data = None
+            missing_data_mask = None
+            missing_location = None
+        else:
+            side_info = None
+
+        if self.is_separate:
+            print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
+            # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
+            missing_location = (missing_location - mean_loc) / std_loc
+            print(f"missing location 2: {missing_location.requires_grad}")
+            # max_loc: mean_loc
+            # min_loc: std_loc
+            # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
+        if not self.is_pristi:
+            print(f"spatial info 1: {spatial_info.requires_grad}")
+            spatial_info = (spatial_info - mean_loc) / std_loc
+            print(f"spatial info 2: {spatial_info.requires_grad}")
+        
+        B, N, K, L = observed_data.shape
+        observed_data_copy = observed_data.clone()
+        observed_mask_copy = observed_mask.clone()
+        if not self.is_pristi and missing_data is not None:
+            missing_data_copy = missing_data.clone()
+        # missing_data_mask_copy = missing_data_mask.clone()
+        
+        if self.is_fft:
+            observed_data = observed_data.permute(0, 1, 3, 2) # B, N, L, K
+            observed_mask = observed_mask.permute(0, 1, 3, 2) # B, N, L, K
+            cond_mask = cond_mask.permute(0, 1, 3, 2) # B, 1, L, K
+            gt_mask = gt_mask.permute(0, 1, 3, 2) # B, 1, L, K
+            missing_data = missing_data.permute(0, 1, 3, 2) # B, 1, L, K
+            # missing_data_mask = missing_data_mask.permute(0, 1, 3, 2) # B, 1, L, K
+
+            observed_data = observed_data.reshape((-1, L, K))
+            # observed_mask = observed_mask
+
+            missing_data = missing_data.reshape((-1, L, K))
+            # missing_data_mask = missing_data_mask
+            with torch.enable_grad():
+                result_observed_data = fit_linear_fft_1(
+                    observed_data,
+                    observed_mask.reshape((-1, L, K)),
+                    n_freqs=latent_size[0],
+                    n_iters=latent_size[2],
+                    lr=latent_size[3],
+                    random=latent_size[4]
+                )
+            observed_fft_coeffs = result_observed_data.coeffs
+            obs_fft_intercept = observed_fft_coeffs.intercept.detach().reshape(observed_fft_coeffs.intercept.shape[0], 1, observed_fft_coeffs.intercept.shape[1])
+            obs_fft_slope = observed_fft_coeffs.slope.detach().reshape(observed_fft_coeffs.slope.shape[0], 1, observed_fft_coeffs.slope.shape[1])
+            obs_fft_cosine = observed_fft_coeffs.cos_coef.detach().permute(0, 2, 1)
+            obs_fft_sine = observed_fft_coeffs.sin_coef.detach().permute(0, 2, 1)
+            observed_data = torch.cat([obs_fft_cosine, obs_fft_sine, obs_fft_intercept, obs_fft_slope], dim=1)
+
+            if missing_data is not None:
+                with torch.enable_grad():
+                    result_missing_data = fit_linear_fft_1(
+                        missing_data,
+                        missing_data_mask.reshape((-1, L, K)),
+                        n_freqs=latent_size[0],
+                        n_iters=latent_size[2],
+                        lr=latent_size[3],
+                        random=latent_size[4]
+                    )
+
+            missing_fft_coeffs = result_missing_data.coeffs
+            miss_fft_intercept = missing_fft_coeffs.intercept.detach().reshape(missing_fft_coeffs.intercept.shape[0], 1, missing_fft_coeffs.intercept.shape[1])
+            miss_fft_slope = missing_fft_coeffs.slope.detach().reshape(missing_fft_coeffs.slope.shape[0], 1, missing_fft_coeffs.slope.shape[1])
+            miss_fft_cosine = missing_fft_coeffs.cos_coef.detach().permute(0, 2, 1)
+            miss_fft_sine = missing_fft_coeffs.sin_coef.detach().permute(0, 2, 1)
+            missing_data = torch.cat([miss_fft_cosine, miss_fft_sine, miss_fft_intercept, miss_fft_slope], dim=1)
+        
+            missing_data = missing_data.reshape((B, 1, 2 * latent_size[0] + 2, latent_size[1]))
+            observed_data = observed_data.reshape((B,N, 2 * latent_size[0] + 2, latent_size[1]))
+            # print(f"observed mask: {observed_mask.shape}, observed data: {observed_data.shape}")
+            observed_mask = nn.functional.interpolate(observed_mask, size=observed_data.shape[2:])
+            cond_mask = nn.functional.interpolate(cond_mask, size=missing_data.shape[2:])
+            gt_mask = nn.functional.interpolate(gt_mask, size=missing_data.shape[2:])
+            # missing_data_mask = nn.functional.interpolate(missing_data_mask, size=missing_data.shape[2:])
+
+
+            observed_data = observed_data.permute(0, 1, 3, 2) # B, N, K_, L_
+            observed_mask = observed_mask.permute(0, 1, 3, 2) # B, N, K_, L_
+            cond_mask = cond_mask.permute(0, 1, 3, 2) # B, 1, K_, L_
+            gt_mask = gt_mask.permute(0, 1, 3, 2) # B, 1, K_, L_
+            missing_data = missing_data.permute(0, 1, 3, 2) # B, 1, K_, L_
+        samples, attn_spat_mean, attn_spat_std = self.impute(observed_data, spatial_info, cond_mask, n_samples, side_info=side_info, A_q=A_q, A_h=A_h, missing_location=missing_location, missing_data_mask=gt_mask, missing_data=missing_data, missing_dims=missing_dims)
+        if self.is_fft:
+            imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device)
+            for i in range(samples.shape[1]):
+                sample = samples[:, i] # B, K_, L_
+                cosine, sine, intercept, slope = sample[:, :, :latent_size[0]], sample[:, :, latent_size[0]:2 * latent_size[0]], sample[:, :, -2], sample[:, :, -1]
+                # print(f"sample: {sample.shape}, cosine: {cosine.shape}, sine: {sine.shape}, intercept: {intercept.shape}, slope: {slope.shape}")
+                coeff = LinearFFTCoeffs(intercept, slope, cosine, sine).to(device=self.device)
+                sample = result_missing_data.decoder(coeff)
+                imputed_samples[:, i] = sample.permute(0, 2, 1) # B, K, L
+            samples = imputed_samples
+        for i in range(len(cut_length)):
+            target_mask[i, ..., 0 : cut_length[i].item()] = 0
+        
+        # if self.is_pristi:
+        #     print(f"observed data: {observed_data.shape}, observed_mask: {observed_mask.shape}")
+        # B, N, K, L = observed_data.shape
+        observed_data = observed_data_copy
+        observed_mask = observed_mask_copy
+        if not self.is_pristi and missing_data is not None:
+            missing_data = missing_data_copy
+        # missing_data_mask = missing_data_mask_copy
+        observed_data = observed_data.reshape(B, N*K, L)
+        observed_mask = observed_mask.reshape(B, N*K, L)
+        if not self.is_pristi:
+            
+            if self.is_multi:
+                target_mask = target_mask.reshape(B, missing_dims * K, L)
+            else:
+                target_mask = target_mask.reshape(B, K, L)
+        else:
+            target_mask = target_mask.reshape(B, N*K, L)
+            
+        if self.is_separate:
+            # missing_data_mask = 1.0 - missing_data_mask
+            return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, missing_data, missing_data_mask, attn_spat_mean, attn_spat_std
+        else:
+            return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, None, None, None, None
+
 
 
 class DynaSTI_PM25(Diffusion_base):
