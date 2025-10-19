@@ -242,13 +242,13 @@ for i, test_batch in enumerate(test_loader):
         init_test_batch['missing_data'] = None
         init_test_batch['gt_mask'] = torch.zeros((1, n_steps, N, 2))
         init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, N, 2))
-        with torch.no_grad():
-            outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=N)
-            samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
-            samples_init = samples_init.permute(0, 1, 3, 2)
-            samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
+        # with torch.no_grad():
+        outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=N)
+        samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
+        samples_init = samples_init.permute(0, 1, 3, 2)
+        samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
 
-            samples_init_mean = samples_init_mean.reshape(1, samples_init_mean.shape[1], N, 2)
+        samples_init_mean = samples_init_mean.reshape(1, samples_init_mean.shape[1], N, 2)
         
         temp_test_batch = test_batch.copy()
 
