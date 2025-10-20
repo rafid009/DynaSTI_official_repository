@@ -242,11 +242,11 @@ for i, test_batch in enumerate(test_loader):
         init_test_batch['missing_data'] = None
         init_test_batch['gt_mask'] = torch.zeros((1, n_steps, N, 2))
         init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, N, 2))
-        # with torch.no_grad():
-        outputs_init = model_diff_saits.evaluate_grad(init_test_batch, nsample, missing_dims=N)
-        samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
-        samples_init = samples_init.permute(0, 1, 3, 2)
-        samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
+        with torch.no_grad():
+            outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=N)
+            samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
+            samples_init = samples_init.permute(0, 1, 3, 2)
+            samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
 
         samples_init_mean = samples_init_mean.reshape(1, samples_init_mean.shape[1], N, 2)
         
@@ -271,6 +271,9 @@ for i, test_batch in enumerate(test_loader):
         grad_uncertainty_location = torch.autograd.grad(uncertainty, new_locations, retain_graph=False, create_graph=False)[0]
         print(f"test: {i} iter: {j}: uncertainty = {uncertainty}, grad uncertainty: {grad_uncertainty_location}")
         if torch.abs(prev_grad_uncertainty - grad_uncertainty_location) < 0.0001:
+            # cleanup large temporaries before break
+            del outputs_temp, samples_temp, uncertainty, grad_uncertainty_location
+            torch.cuda.empty_cache()
             break
         with torch.no_grad():  # Disable autograd while updating the input
             new_locations -= lr * grad_uncertainty_location
@@ -280,5 +283,8 @@ for i, test_batch in enumerate(test_loader):
         # df_input_locations = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     
         df_new_locations.to_csv(f'{folder}/{i}/new_locations_{j}.csv', index=False)
+        # free big objects and empty cache to reduce peak memory
+        del outputs_temp, samples_temp, uncertainty, grad_uncertainty_location
+        torch.cuda.empty_cache()
     exit()
     
