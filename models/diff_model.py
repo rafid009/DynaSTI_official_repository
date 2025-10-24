@@ -1448,7 +1448,7 @@ class DynaSTI(nn.Module):
             _, M, _, _ = X_target.shape
         
         spatial_input = spatial_info
-        print(f"X_input: {X_input.requires_grad}, X_target: {X_target.requires_grad}, masks: {masks.requires_grad}, spatial_info: {spatial_info.requires_grad}, missing_location: {missing_location.requires_grad}")
+        # print(f"X_input: {X_input.requires_grad}, X_target: {X_target.requires_grad}, masks: {masks.requires_grad}, spatial_info: {spatial_info.requires_grad}, missing_location: {missing_location.requires_grad}")
 
         spatial_embed = F.leaky_relu(self.spatial_context_embeddimg(spatial_input)) # B, N, 128
         missing_location_embed = F.leaky_relu(self.missing_spatial_context_embedding(missing_location)) # B, 1, 128
@@ -1521,7 +1521,7 @@ class DynaSTI(nn.Module):
                 #     noise_c = noise #+ t3 # B*L, M, K+128
                 #     noise, _ = self.spatial_blocks_noise[i](noise, noise_c) # B*L, M, K+128
         
-        print(f"noise: {noise.requires_grad}")
+        # print(f"noise: {noise.requires_grad}")
         c1 = c1.reshape((B, L, N, -1)) # B, L, N, K+128
         if self.config['is_multi']:
             noise = noise.reshape((B, L, M, -1)) # B, L, M, K+128
