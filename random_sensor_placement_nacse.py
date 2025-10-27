@@ -225,7 +225,7 @@ M = 10
 lr = 0.01
 total_points = 1000
 iters = 10 #00
-folder = 'results_map'
+folder = 'results_map_1'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
@@ -287,6 +287,7 @@ for i, test_batch in enumerate(test_loader):
             loc_and_uncertainty = NewLocationCoordsAndUncertainty(new_locations[j], uncertainty_score.item())
             locations_and_uncertainty.append(loc_and_uncertainty)
             pbar.set_postfix({"Current location": j, "Uncertainty": uncertainty_score.item()})
+            print(f"Uncertainty for location {j+1}/{total_points}: {uncertainty_score.item()}")
             print(f"Location {j+1}/{total_points} processed.")
     locations_and_uncertainty.sort()
     new_decided_locations = [loc_unc.coords.numpy() for loc_unc in locations_and_uncertainty[:N]]
