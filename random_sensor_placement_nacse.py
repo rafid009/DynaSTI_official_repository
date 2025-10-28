@@ -246,6 +246,10 @@ for i, test_batch in enumerate(test_loader):
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
     new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
 
+    df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
+    df_inputs.to_csv(f'{folder}/{i}/input_locations.csv', index=False)
+    exit()
+
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)

@@ -1179,17 +1179,17 @@ class Diffusion_base(nn.Module):
                 side_info = None
 
             if self.is_separate:
-                print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
+                # print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
                 # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
                 missing_location = (missing_location - mean_loc) / std_loc
-                print(f"missing location 2: {missing_location.requires_grad}")
+                # print(f"missing location 2: {missing_location.requires_grad}")
                 # max_loc: mean_loc
                 # min_loc: std_loc
                 # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
             if not self.is_pristi:
-                print(f"spatial info 1: {spatial_info.requires_grad}")
+                # print(f"spatial info 1: {spatial_info.requires_grad}")
                 spatial_info = (spatial_info - mean_loc) / std_loc
-                print(f"spatial info 2: {spatial_info.requires_grad}")
+                # print(f"spatial info 2: {spatial_info.requires_grad}")
             
             B, N, K, L = observed_data.shape
             observed_data_copy = observed_data.clone()
@@ -1578,7 +1578,7 @@ class DynaSTI_NASCE(Diffusion_base):
         # spatial_info = spatial_info.permute(0, 2, 3, 1)
         observed_mask = observed_mask.permute(0, 2, 3, 1) # B, N, K, L
         gt_mask = gt_mask.permute(0, 2, 3, 1) # B, N, K, L
-        print(f"In process data: observed data: {observed_data.requires_grad}, observed mask: {observed_mask.requires_grad}, spatial info: {spatial_info.requires_grad}")
+        # print(f"In process data: observed data: {observed_data.requires_grad}, observed mask: {observed_mask.requires_grad}, spatial info: {spatial_info.requires_grad}")
 
         cut_length = torch.zeros(len(observed_data)).long().to(self.device) #.cuda() #to(self.device)
         if self.is_ignnk:
