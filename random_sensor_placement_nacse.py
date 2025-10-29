@@ -244,18 +244,19 @@ for i, test_batch in enumerate(test_loader):
         os.makedirs(f"{folder}/{i}")
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
-    new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
+    # new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
+    new_locations = pd.read_csv(f'{folder}/{i}/random_locations.csv').to_numpy()
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     df_inputs.to_csv(f'{folder}/{i}/input_locations.csv', index=False)
-    exit()
+
 
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
 
     locations_and_uncertainty = []
-    with tqdm(range(total_points), desc=f"Processing test batch {i+1}/{len(test_loader)}") as pbar:
+    with tqdm(range(new_locations.shape[0]), desc=f"Processing test batch {i+1}/{len(test_loader)}") as pbar:
         for j in pbar:
             init_test_batch = test_batch.copy()
             init_test_batch['missing_data_loc'] = new_locations[j].reshape(1, -1, 3)
@@ -294,6 +295,12 @@ for i, test_batch in enumerate(test_loader):
             print(f"Uncertainty for location {j+1}/{total_points}: {uncertainty_score.item()}")
             print(f"Location {j+1}/{total_points} processed.")
     locations_and_uncertainty.sort()
+    
+    new_decided_locations_uncertainty = [np.concatenate([loc_unc.coords.numpy(),np.array([loc_unc.uncertainty])], axis=0) for loc_unc in locations_and_uncertainty]
+
+    df_new_locations = pd.DataFrame(new_decided_locations_uncertainty, columns=['longitude', 'latitude', 'elevation', 'uncertainty'])
+    df_new_locations.to_csv(f'{folder}/{i}/decided_locations_uncertainty.csv', index=False)
+
     new_decided_locations = [loc_unc.coords.numpy() for loc_unc in locations_and_uncertainty[:N]]
     df_new_locations = pd.DataFrame(new_decided_locations, columns=['longitude', 'latitude', 'elevation'])
     df_new_locations.to_csv(f'{folder}/{i}/decided_locations.csv', index=False)
