@@ -223,7 +223,7 @@ train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_feat
 N = 5
 M = 10
 lr = 0.01
-total_points = 1000
+total_points = 100
 iters = 10 #00
 folder = 'results_map'
 if not os.path.isdir(folder):
@@ -244,8 +244,8 @@ for i, test_batch in enumerate(test_loader):
         os.makedirs(f"{folder}/{i}")
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
-    # new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
-    new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/decided_locations.csv').to_numpy(), dtype=torch.float32)
+    new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
+    # new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/decided_locations.csv').to_numpy(), dtype=torch.float32)
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     df_inputs.to_csv(f'{folder}/{i}/input_locations.csv', index=False)
