@@ -158,7 +158,7 @@ def generate_uniform_points_around_targets(targets: torch.Tensor, N: int, expand
     coord_max = coord_max + expand
 
     # Sample uniformly
-    print(f"coord max: {coord_max.shape}, coord min: {coord_min.shape}")
+    print(f"coord max: {coord_max}, coord min: {coord_min}")
     new_points = torch.rand((N, 3)) * (coord_max - coord_min) + coord_min
 
     return new_points
@@ -245,7 +245,7 @@ for i, test_batch in enumerate(test_loader):
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
     # new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
-    new_locations = pd.read_csv(f'{folder}/{i}/random_locations.csv').to_numpy()
+    new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/random_locations.csv').to_numpy(), dtype=torch.float32)
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     df_inputs.to_csv(f'{folder}/{i}/input_locations.csv', index=False)
