@@ -877,6 +877,7 @@ class Diffusion_base(nn.Module):
                     # current_sample.detach().requires_grad_(True)
                 # print(f"current sample: {current_sample.shape}")
             # current_sample = (1 - cond_mask) * current_sample + cond_mask * observed_data
+                print(f"current sample before grad: {current_sample.shape}, grad req: {grad_req.shape}")
                 grad_outputs = torch.ones_like(current_sample)
                 grad_req_X_curr = torch.autograd.grad(current_sample, grad_req, grad_outputs=grad_outputs, retain_graph=False, create_graph=False)[0]
                 print(f"grad req X curr: {grad_req_X_curr.shape}")
