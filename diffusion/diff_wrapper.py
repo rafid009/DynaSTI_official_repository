@@ -880,7 +880,7 @@ class Diffusion_base(nn.Module):
             
                 # print(f"current sample before grad: {current_sample.shape}, grad req: {grad_req.shape}")
                 grad_outputs = torch.ones_like(current_sample)
-                grad_req_X_curr = torch.autograd.grad(current_sample, grad_req, grad_outputs=grad_outputs, retain_graph=False, create_graph=False)[0]
+                grad_req_X_curr = torch.autograd.grad(current_sample, grad_req, grad_outputs=grad_outputs, retain_graph=True, create_graph=False)[0]
                 # print(f"grad req X curr: {grad_req_X_curr.shape}")
                 grads[:, t] *= grad_req_X_curr.mean() #.view(B, -1)
                 if t != num_steps - 1:
