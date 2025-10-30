@@ -803,7 +803,7 @@ class Diffusion_base(nn.Module):
             attn_spat_mean, attn_spat_std = None, None
         return imputed_samples, attn_spat_mean, attn_spat_std
     
-    def impute_grad(self, observed_data, spatial_info, cond_mask, n_samples, side_info=None, A_q=None, A_h=None, missing_location=None, missing_data_mask=None, missing_data=None, eta=0.000, missing_dims=10):
+    def impute_grad(self, observed_data, spatial_info, cond_mask, n_samples, side_info=None, A_q=None, A_h=None, missing_location=None, missing_data_mask=None, missing_data=None, eta=0.000, missing_dims=10, grad_req=None):
         B, N, K, L = observed_data.shape
         # if self.is_separate and (self.is_dit or self.is_dit_ca2):
         #     if self.is_multi:
@@ -826,7 +826,7 @@ class Diffusion_base(nn.Module):
             num_steps = self.num_steps
             avg_attn_spat = 0
 
-            
+            grads = torch.ones((B, num_steps)).to(self.device)
             for t in range(num_steps - 1, -1, -1):
 
                 cond_obs = observed_data
@@ -845,9 +845,9 @@ class Diffusion_base(nn.Module):
                         'A_h': A_h
                     }
                 predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device)) #.cuda()) #.to(self.device))
-                # else:
+                
                 #     predicted, attn_spat = self.diffmodel(inputs, torch.tensor([t]).to(self.device))
-                print(f"predicted: {predicted.requires_grad}")
+                # print(f"predicted: {predicted.requires_grad}")
                 # print(f"attn spat: {attn_spat.shape}")
                 if attn_spat is not None:
                     avg_attn_spat += attn_spat
@@ -877,6 +877,9 @@ class Diffusion_base(nn.Module):
                     # current_sample.detach().requires_grad_(True)
                 # print(f"current sample: {current_sample.shape}")
             # current_sample = (1 - cond_mask) * current_sample + cond_mask * observed_data
+                grad_req_X_curr = torch.autograd.grad(current_sample, grad_req, retain_graph=False, create_graph=False)[0]
+                print(f"grad req X curr: {grad_req_X_curr.shape}")
+                grads[:, t] *= grad_req_X_curr #.view(B, -1)
             
             if not isinstance(avg_attn_spat, int):
                 avg_attn_spat /= num_steps
@@ -1299,7 +1302,7 @@ class Diffusion_base(nn.Module):
             return samples, observed_data, target_mask, observed_mask, observed_tp, gt_intact, None, None, None, None
 
 
-    def evaluate_grad(self, batch, n_samples, missing_dims=10, latent_size=None):
+    def evaluate_grad(self, batch, n_samples, missing_dims=10, latent_size=None, grad_req=None):
         if self.is_ignnk:
             (
                 observed_data,
@@ -1461,7 +1464,7 @@ class Diffusion_base(nn.Module):
             cond_mask = cond_mask.permute(0, 1, 3, 2) # B, 1, K_, L_
             gt_mask = gt_mask.permute(0, 1, 3, 2) # B, 1, K_, L_
             missing_data = missing_data.permute(0, 1, 3, 2) # B, 1, K_, L_
-        samples, attn_spat_mean, attn_spat_std = self.impute_grad(observed_data, spatial_info, cond_mask, n_samples, side_info=side_info, A_q=A_q, A_h=A_h, missing_location=missing_location, missing_data_mask=gt_mask, missing_data=missing_data, missing_dims=missing_dims)
+        samples, attn_spat_mean, attn_spat_std = self.impute_grad(observed_data, spatial_info, cond_mask, n_samples, side_info=side_info, A_q=A_q, A_h=A_h, missing_location=missing_location, missing_data_mask=gt_mask, missing_data=missing_data, missing_dims=missing_dims, grad_req=grad_req)
         if self.is_fft:
             imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device)
             for i in range(samples.shape[1]):

@@ -259,7 +259,7 @@ for i, test_batch in enumerate(test_loader):
         temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations], dim=1)
         temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
 
-        outputs_temp = model_diff_saits.evaluate_grad(temp_test_batch, nsample, missing_dims=M)
+        outputs_temp = model_diff_saits.evaluate_grad(temp_test_batch, nsample, missing_dims=M, grad_req=new_locations)
         samples_temp, _, _, _, _, _, _, _, _, _ = outputs_temp
         samples_temp = samples_temp.permute(0, 1, 3, 2) # B, T, L, M*K
         B, T, L, D = samples_temp.shape
