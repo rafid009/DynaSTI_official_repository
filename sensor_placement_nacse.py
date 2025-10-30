@@ -260,15 +260,16 @@ for i, test_batch in enumerate(test_loader):
         temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
 
         outputs_temp = model_diff_saits.evaluate_grad(temp_test_batch, nsample, missing_dims=M, grad_req=new_locations)
-        samples_temp, _, _, _, _, _, _, _, _, _ = outputs_temp
+        samples_temp, _, _, _, _, _, _, _, _, _, samples_grad = outputs_temp
         samples_temp = samples_temp.permute(0, 1, 3, 2) # B, T, L, M*K
         B, T, L, D = samples_temp.shape
         # print(f"sample temp: {samples_temp.shape}")
         samples_temp = samples_temp.reshape(T, L, M, 2).permute(0, 2, 1, 3) # T, M, L, K
-        # samples_temp_mean = samples_temp.mean(dim=1)  # (B,L,M*K)
+        samples_temp_mean = samples_temp.mean(dim=1)  # (B,L,M*K)
 
         uncertainty = compute_global_uncertainty_mean(samples_temp)
-        grad_uncertainty_location = torch.autograd.grad(uncertainty, new_locations, retain_graph=False, create_graph=False)[0]
+        grad_uncertainty_location = torch.autograd.grad(uncertainty, samples_temp_mean, retain_graph=False, create_graph=False)[0].mean()
+        
         print(f"test: {i} iter: {j}: uncertainty = {uncertainty}, grad uncertainty: {grad_uncertainty_location}")
         if torch.abs(prev_grad_uncertainty - grad_uncertainty_location) < 0.0001:
             # cleanup large temporaries before break
