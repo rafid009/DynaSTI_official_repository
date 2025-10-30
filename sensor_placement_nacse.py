@@ -213,7 +213,7 @@ N = 5
 M = 10
 lr = 0.01
 iters = 10 #00
-folder = 'results_map'
+folder = 'results_map_grad_nacse'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
