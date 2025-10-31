@@ -268,8 +268,8 @@ for i, test_batch in enumerate(test_loader):
         samples_temp_mean = samples_temp.mean(dim=1)  # (B,L,M*K)
 
         uncertainty = compute_global_uncertainty_mean(samples_temp)
-        print(f"uncertainty: {uncertainty.requires_grad}, samples grad: {samples_temp_mean.requires_grad}")
-        grad_uncertainty_location = torch.autograd.grad(uncertainty, samples_temp_mean, retain_graph=False, create_graph=False)[0].mean()
+        # print(f"uncertainty: {uncertainty.requires_grad}, samples_temp_mean : {samples_temp_mean.requires_grad}")
+        grad_uncertainty_location = torch.autograd.grad(uncertainty, samples_temp, retain_graph=False, create_graph=False)[0].mean()
         grad_uncertainty_location *= samples_grad.mean()
         print(f"test: {i} iter: {j}: uncertainty = {uncertainty}, grad uncertainty: {grad_uncertainty_location}")
         if torch.abs(prev_grad_uncertainty - grad_uncertainty_location) < 0.0001:
