@@ -882,10 +882,10 @@ class Diffusion_base(nn.Module):
                 grad_outputs = torch.ones_like(current_sample)
                 grad_req_X_curr = torch.autograd.grad(current_sample, grad_req, grad_outputs=grad_outputs, retain_graph=True, create_graph=False)[0]
                 # print(f"grad req X curr: {grad_req_X_curr.shape}")
-                grads[:, t] *= grad_req_X_curr.sum() #.view(B, -1)
+                grads[:, t] *= grad_req_X_curr.mean() #.view(B, -1)
                 if t != num_steps - 1:
                     for j in range(num_steps - 1, t, -1):
-                        chain_gradient = torch.autograd.grad(current_sample, noisy_target, grad_outputs=grad_outputs, retain_graph=True, create_graph=False)[0].sum()
+                        chain_gradient = torch.autograd.grad(current_sample, noisy_target, grad_outputs=grad_outputs, retain_graph=True, create_graph=False)[0].mean()
                         grads[:, j] *= chain_gradient
                         del chain_gradient
                 del grad_req_X_curr, predicted, attn_spat
