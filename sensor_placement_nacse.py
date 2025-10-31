@@ -281,7 +281,7 @@ for i, test_batch in enumerate(test_loader):
             new_locations -= lr * grad_uncertainty_location
 
         prev_grad_uncertainty = grad_uncertainty_location
-        df_new_locations = pd.DataFrame(new_locations.detach().cpu(), columns=['longitude', 'latitude', 'elevation'])
+        df_new_locations = pd.DataFrame(new_locations.rehsape(-1, 3).detach().cpu(), columns=['longitude', 'latitude', 'elevation'])
         # df_input_locations = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
     
         df_new_locations.to_csv(f'{folder}/{i}/new_locations_{j}.csv', index=False)
