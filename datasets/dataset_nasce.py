@@ -534,7 +534,7 @@ class NASCE_Dataset(Dataset):
             if len(self.missing_data) != 0:
                 s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, 2)
             if len(self.missing_data_mask) != 0:
-                s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, 2)
+                s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data_mask[index].shape[0], -1, 2)
             s['missing_data_loc'] = self.missing_data_loc[index]
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
