@@ -402,7 +402,17 @@ class NASCE_Dataset(Dataset):
                             candidate_lons = np.random.uniform(*lon_range, size=missing_dims)
                             candidate_elevs = np.random.uniform(*elev_range, size=missing_dims)
                             missing_data_loc = np.column_stack([candidate_lats, candidate_lons, candidate_elevs])
+                            missing_data = None
+                            missing_data_mask = None
                             
+                            obs_val = np.nan_to_num(X[i], copy=True)
+                            values = X[i].copy()
+                            obs_mask = ~np.isnan(obs_val)
+                            mask = np.zeros((L, missing_dims * 2))
+                            X_loc_temp = X_loc
+                            obs_val_pristi = None
+                            mask_pristi = None
+                            obs_mask_pristi = None
                         else:
                             is_dynamic = dynamic_rate != -1
                             obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
@@ -417,8 +427,10 @@ class NASCE_Dataset(Dataset):
                         if is_test or is_valid:
                             self.spatial_info.append(X_loc_temp)
                             if self.is_separate:
-                                self.missing_data.append(missing_data)
-                                self.missing_data_mask.append(missing_data_mask)
+                                if missing_data is not None:
+                                    self.missing_data.append(missing_data)
+                                if missing_data_mask is not None:
+                                    self.missing_data_mask.append(missing_data_mask)
                                 self.missing_data_loc.append(missing_data_loc)
                                 # print(f"missing data loc: {missing_data_loc}")
                         else:
@@ -428,9 +440,13 @@ class NASCE_Dataset(Dataset):
                         self.observed_masks.append(obs_mask)
                         self.gt_masks.append(mask)
                         # print(f"obs pristi: {obs_mask_pristi.shape}")
-                        self.observed_values_pristi.append(obs_val_pristi)
-                        self.observed_masks_pristi.append(obs_mask_pristi)
-                        self.gt_masks_pristi.append(mask_pristi)
+                        
+                        if obs_val_pristi is not None:
+                            self.observed_values_pristi.append(obs_val_pristi)
+                        if obs_mask_pristi is not None:
+                            self.observed_masks_pristi.append(obs_mask_pristi)
+                        if obs_mask is not None:
+                            self.gt_masks_pristi.append(mask_pristi)
 
                         if is_test or is_valid:
                             self.gt_intact.append(values)
@@ -479,11 +495,12 @@ class NASCE_Dataset(Dataset):
                     # print(f"pre missing data loc: {self.missing_data_loc}")
                     self.missing_data_loc = torch.tensor(np.array(self.missing_data_loc, dtype=np.float64), dtype=torch.float64)
                     # print(f"missing data loc: {self.missing_data_loc}")
-                    self.missing_data = ((self.missing_data.reshape(self.missing_data.shape[0], L, -1, 2) - self.mean) / self.std) * self.missing_data_mask.reshape(self.missing_data_mask.shape[0], L, -1, 2)
+                    if len(self.missing_data) != 0:
+                        self.missing_data = ((self.missing_data.reshape(self.missing_data.shape[0], L, -1, 2) - self.mean) / self.std) * self.missing_data_mask.reshape(self.missing_data_mask.shape[0], L, -1, 2)
                     
             self.observed_values = ((self.observed_values.reshape(self.observed_values.shape[0], L, -1, 2) - self.mean) / self.std) * self.observed_masks.reshape(self.observed_masks.shape[0], L, -1, 2)
             # print(f"pristi value: {self.observed_values_pristi.shape}")
-            if is_test or is_valid:
+            if (is_test or is_valid) and len(self.observed_values_pristi) != 0:
                 self.observed_values_pristi = ((self.observed_values_pristi.reshape(self.observed_values_pristi.shape[0], L, -1, 2) - self.mean) /self.std) * self.observed_masks_pristi.reshape(self.observed_masks_pristi.shape[0], L, -1, 2)
             self.neighbor_location = None #"./data/nacse/neighbors.json"
 
@@ -507,12 +524,17 @@ class NASCE_Dataset(Dataset):
             # "total_loc": self.total_loc.to(torch.float32)
         }
         if self.is_test or self.is_valid:
-            s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
-            s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
-            s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
+            if len(self.observed_values_pristi) != 0:
+                s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
+            if len(self.observed_masks_pristi) != 0:
+                s["observed_mask_pristi"] = self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
+            if len(self.gt_masks_pristi) != 0:
+                s['gt_mask_pristi'] = self.gt_masks_pristi[index].reshape(self.gt_masks_pristi[index].shape[0], -1, 2)
         if self.is_separate and self.is_test:
-            s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, 2)
-            s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, 2)
+            if len(self.missing_data) != 0:
+                s["missing_data"] = self.missing_data[index].reshape(self.missing_data[index].shape[0], -1, 2)
+            if len(self.missing_data_mask) != 0:
+                s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data[index].shape[0], -1, 2)
             s['missing_data_loc'] = self.missing_data_loc[index]
         if len(self.gt_masks) == 0:
             s["gt_mask"] = None
