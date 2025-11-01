@@ -445,7 +445,7 @@ class NASCE_Dataset(Dataset):
                             self.observed_values_pristi.append(obs_val_pristi)
                         if obs_mask_pristi is not None:
                             self.observed_masks_pristi.append(obs_mask_pristi)
-                        if obs_mask is not None:
+                        if mask_pristi is not None:
                             self.gt_masks_pristi.append(mask_pristi)
 
                         if is_test or is_valid:
