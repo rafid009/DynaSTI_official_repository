@@ -255,54 +255,90 @@ for i, test_batch in enumerate(test_loader):
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
     exit()
-    locations_and_uncertainty = []
-    with tqdm(range(new_locations.shape[0]), desc=f"Processing test batch {i+1}/{len(test_loader)}") as pbar:
-        for j in pbar:
-            init_test_batch = test_batch.copy()
-            init_test_batch['missing_data_loc'] = new_locations[j].reshape(1, -1, 3)
-            init_test_batch['missing_data'] = None
-            init_test_batch['gt_mask'] = torch.zeros((1, n_steps, 1, 2))
-            init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, 1, 2))
-            with torch.no_grad():
-                outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=1)
-                samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
-                samples_init = samples_init.permute(0, 1, 3, 2)
-                samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
-
-            samples_init_mean = samples_init_mean.reshape(1, samples_init_mean.shape[1], 1, 2)
-            
-            temp_test_batch = test_batch.copy()
-
-            temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2) #.detach()
-            new_obs_mask = torch.ones((1, n_steps, 1, 2)).to(device)
-            temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2) #.detach()
-            
-            temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations[j].reshape((1, -1, 3)).to(device)], dim=1)
-            temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
-
-            with torch.no_grad():
-                outputs = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
-                samples, _, _, _, _, _, _, _, _, _ = outputs
-                samples = samples.permute(0, 1, 3, 2)  # (B, T, N_sensors, L, K)
-            B, T, L, D = samples.shape
-            # print(f"sample temp: {samples_temp.shape}")
-            samples = samples.reshape(T, L, M, 2).permute(0, 2, 1, 3) # T, M, L, K
-            uncertainty_score = compute_global_uncertainty_mean(samples, eps=1e-8)
-
-            loc_and_uncertainty = NewLocationCoordsAndUncertainty(new_locations[j], uncertainty_score.item())
-            locations_and_uncertainty.append(loc_and_uncertainty)
-            pbar.set_postfix({"Current location": j, "Uncertainty": uncertainty_score.item()})
-            print(f"Uncertainty for location {j+1}/{total_points}: {uncertainty_score.item()}")
-            print(f"Location {j+1}/{total_points} processed.")
-    locations_and_uncertainty.sort()
     
-    new_decided_locations_uncertainty = [np.concatenate([loc_unc.coords.numpy(),np.array([loc_unc.uncertainty])], axis=0) for loc_unc in locations_and_uncertainty]
+    decided_locations = []
+    for k in range(N):
+        print(f"Missing sensor {k+1}/{N} processing...")
+        locations_and_uncertainty = []
+        if len(decided_locations) > 0:
+            decided_coords = torch.stack([loc_unc.coords for loc_unc in decided_locations], dim=0)
+            test_batch_copy = test_batch.copy()
+            # test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
+            test_batch_copy['missing_data_loc'] = decided_coords.reshape((1, -1, 3))
+            test_batch_copy['missing_data'] = None
+            test_batch_copy['gt_mask'] = torch.zeros((1, n_steps, decided_coords.shape[0], 2))
+            test_batch_copy['missing_data_mask'] = torch.ones((1, n_steps, decided_coords.shape[0], 2))
+            with torch.no_grad():
+                outputs_test_copy = model_diff_saits.evaluate(test_batch_copy, nsample, missing_dims=decided_coords.shape[0])
+                samples_test_copy, _, _, _, _, _, _, _, _, _ = outputs_test_copy
+                samples_test_copy = samples_test_copy.permute(0, 1, 3, 2)
+                samples_test_copy_mean = samples_test_copy.mean(dim=1)  # (B,L,N*K)
+            samples_test_copy_mean = samples_test_copy_mean.reshape(1, samples_test_copy_mean.shape[1], decided_coords.shape[0], 2)
+            
+            test_batch_copy = test_batch.copy()
+            test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean], dim=-2) #.detach()
+            new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2)).to(device)
+            test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
+            test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
+        else:
+            test_batch_copy = test_batch
+        with tqdm(range(new_locations.shape[0]), desc=f"Processing test batch {i+1}/{len(test_loader)}") as pbar:
+            for j in pbar:
+                init_test_batch = test_batch_copy.copy()
+                init_test_batch['missing_data_loc'] = new_locations[j].reshape(1, -1, 3)
+                init_test_batch['missing_data'] = None
+                init_test_batch['gt_mask'] = torch.zeros((1, n_steps, 1, 2))
+                init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, 1, 2))
+                with torch.no_grad():
+                    outputs_init = model_diff_saits.evaluate(init_test_batch, nsample, missing_dims=1)
+                    samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
+                    samples_init = samples_init.permute(0, 1, 3, 2)
+                    samples_init_mean = samples_init.mean(dim=1)  # (B,L,N*K)
 
-    df_new_locations = pd.DataFrame(new_decided_locations_uncertainty, columns=['longitude', 'latitude', 'elevation', 'uncertainty'])
-    df_new_locations.to_csv(f'{folder}/{i}/decided_locations_uncertainty.csv', index=False)
+                samples_init_mean = samples_init_mean.reshape(1, samples_init_mean.shape[1], 1, 2)
+                
+                temp_test_batch = test_batch_copy.copy()
 
-    new_decided_locations = [loc_unc.coords.numpy() for loc_unc in locations_and_uncertainty[:N]]
-    df_new_locations = pd.DataFrame(new_decided_locations, columns=['longitude', 'latitude', 'elevation'])
+                temp_test_batch['observed_data'] = torch.cat([temp_test_batch['observed_data'].to(device), samples_init_mean], dim=-2) #.detach()
+                new_obs_mask = torch.ones((1, n_steps, 1, 2)).to(device)
+                temp_test_batch['observed_mask'] = torch.cat([temp_test_batch['observed_mask'].to(device), new_obs_mask], dim=-2) #.detach()
+                
+                temp_test_batch['spatial_info'] = torch.cat([temp_test_batch['spatial_info'].to(device), new_locations[j].reshape((1, -1, 3)).to(device)], dim=1)
+                temp_test_batch['missing_data_loc'] = temp_test_batch['missing_data_loc'].to(device) #.detach()
+
+                with torch.no_grad():
+                    outputs = model_diff_saits.evaluate(temp_test_batch, nsample, missing_dims=M)
+                    samples, _, _, _, _, _, _, _, _, _ = outputs
+                    samples = samples.permute(0, 1, 3, 2)  # (B, T, N_sensors, L, K)
+                B, T, L, D = samples.shape
+                # print(f"sample temp: {samples_temp.shape}")
+                samples = samples.reshape(T, L, M, 2).permute(0, 2, 1, 3) # T, M, L, K
+                uncertainty_score = compute_global_uncertainty_mean(samples, eps=1e-8)
+
+                loc_and_uncertainty = NewLocationCoordsAndUncertainty(new_locations[j], uncertainty_score.item())
+                locations_and_uncertainty.append(loc_and_uncertainty)
+                pbar.set_postfix({"Current location": j, "Uncertainty": uncertainty_score.item()})
+                print(f"Uncertainty for location {j+1}/{total_points}: {uncertainty_score.item()}")
+                print(f"Location {j+1}/{total_points} processed.")
+        locations_and_uncertainty.sort()
+        
+        new_decided_locations_uncertainty = [np.concatenate([loc_unc.coords.numpy(),np.array([loc_unc.uncertainty])], axis=0) for loc_unc in locations_and_uncertainty]
+
+        if not os.path.isdir(f'{folder}/{i}/{k}'):
+            os.makedirs(f'{folder}/{i}/{k}')
+        df_new_locations = pd.DataFrame(new_decided_locations_uncertainty, columns=['longitude', 'latitude', 'elevation', 'uncertainty'])
+        df_new_locations.to_csv(f'{folder}/{i}/{k}/decided_locations_uncertainty.csv', index=False)
+
+        decided_locations.append(locations_and_uncertainty[0])
+        selected_coords = locations_and_uncertainty[0].coords
+        new_locations_copy = []
+        for loc in new_locations:
+            if not torch.all(loc == selected_coords):
+                new_locations_copy.append(loc)
+        new_locations = torch.stack(new_locations_copy, dim=0)
+        print(f"Decided location {k+1}/{N}: {locations_and_uncertainty[0].coords.numpy()} with uncertainty {locations_and_uncertainty[0].uncertainty}")
+    new_decided_locations = [np.concatenate([loc_unc.coords.numpy(), np.array([loc_unc.uncertainty])], axis=0) for loc_unc in decided_locations]
+    df_new_locations = pd.DataFrame(new_decided_locations, columns=['longitude', 'latitude', 'elevation', 'uncertainty'])
     df_new_locations.to_csv(f'{folder}/{i}/decided_locations.csv', index=False)
     print(f"Decided locations for test batch {i+1}/{len(test_loader)} saved.")
     exit()
