@@ -395,7 +395,7 @@ class NASCE_Dataset(Dataset):
                     else:
                         if southeast:
                             # SE Oregon region (approx.)
-                            lat_range = (43.0, 45.0)
+                            lat_range = (43.6, 45.0)
                             lon_range = (-121.0, -119.0)
                             elev_range = (400, 2500)
                             candidate_lats = np.random.uniform(*lat_range, size=missing_dims)
