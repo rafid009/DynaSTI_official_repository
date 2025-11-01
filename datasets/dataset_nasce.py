@@ -401,7 +401,7 @@ class NASCE_Dataset(Dataset):
                             candidate_lats = np.random.uniform(*lat_range, size=missing_dims)
                             candidate_lons = np.random.uniform(*lon_range, size=missing_dims)
                             candidate_elevs = np.random.uniform(*elev_range, size=missing_dims)
-                            missing_data_loc = np.column_stack([candidate_lats, candidate_lons, candidate_elevs])
+                            missing_data_loc = np.column_stack([candidate_lons, candidate_lats, candidate_elevs])
                             missing_data = None
                             missing_data_mask = None
                             

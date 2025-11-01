@@ -225,7 +225,7 @@ M = 10
 lr = 0.01
 total_points = 100
 iters = 10 #00
-folder = 'results_map'
+folder = 'results_map_random'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
