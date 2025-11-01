@@ -403,7 +403,7 @@ class NASCE_Dataset(Dataset):
                             candidate_elevs = np.random.uniform(*elev_range, size=missing_dims)
                             missing_data_loc = np.column_stack([candidate_lons, candidate_lats, candidate_elevs])
                             missing_data = None
-                            missing_data_mask = None
+                            missing_data_mask = np.ones((L, missing_dims * 2))
                             
                             obs_val = np.nan_to_num(X[i], copy=True)
                             values = X[i].copy()
