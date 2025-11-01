@@ -421,7 +421,7 @@ class NASCE_Dataset(Dataset):
                                                                                     spatial=spatial, X_test=X_test[i], \
                                                                                         X_loc_train=X_loc,\
                                                                                         X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
-                        if (is_test or is_valid) and missing_data_mask.sum() == 0:
+                        if (is_test or is_valid) and missing_data_mask is not None and missing_data_mask.sum() == 0:
                             continue
                         self.observed_values.append(obs_val)
                         if is_test or is_valid:
