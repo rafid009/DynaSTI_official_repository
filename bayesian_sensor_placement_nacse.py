@@ -240,8 +240,8 @@ def evaluate_uncertainty(model, test_batch, new_locations, M, nsample=50):
     init_test_batch = test_batch.copy()
     init_test_batch['missing_data_loc'] = new_locations.reshape(1, -1, 3)
     init_test_batch['missing_data'] = None
-    init_test_batch['gt_mask'] = torch.zeros((1, n_steps, -1, 2))
-    init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, -1, 2))
+    init_test_batch['gt_mask'] = torch.zeros((1, n_steps, 1, 2))
+    init_test_batch['missing_data_mask'] = torch.ones((1, n_steps, 1, 2))
     with torch.no_grad():
         outputs_init = model.evaluate(init_test_batch, nsample, missing_dims=1)
         samples_init, _, _, _, _, _, _, _, _, _ = outputs_init
