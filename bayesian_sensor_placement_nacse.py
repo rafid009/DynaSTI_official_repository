@@ -317,7 +317,7 @@ def bayes_opt_sensor_placement_batch(
     """
     Run Batch Bayesian Optimization to choose multiple new sensor locations per iteration.
     """
-    bounds_t = bounds #torch.tensor(bounds, dtype=torch.float32, device=device)  # shape (2, dim)
+    bounds_t = bounds.to(device) #torch.tensor(bounds, dtype=torch.float32, device=device)  # shape (2, dim)
     dim = bounds_t.shape[1]
 
     # Step 1: initial random data
