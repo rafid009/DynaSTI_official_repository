@@ -275,8 +275,8 @@ for i, test_batch in enumerate(test_loader):
             samples_test_copy_mean = samples_test_copy_mean.reshape(1, samples_test_copy_mean.shape[1], decided_coords.shape[0], 2)
             
             test_batch_copy = test_batch.copy()
-            test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean], dim=-2) #.detach()
-            new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2)).to(device)
+            test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean.cpu()], dim=-2) #.detach()
+            new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2))
             test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
             test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
         else:
