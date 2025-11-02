@@ -399,7 +399,7 @@ for i, test_batch in enumerate(test_loader):
     coord_min = coord_min - expand
     coord_max = coord_max + expand
 
-    bounds = (coord_min, coord_max)
+    bounds = [coord_min, coord_max]
     decided_locations = []
     for j in range(N):
         if len(decided_locations) > 0:
