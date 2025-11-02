@@ -368,7 +368,7 @@ lr = 0.01
 total_points = 1000
 iters = 10 #00
 expand_ratio = 0.1
-folder = 'results_map_1'
+folder = 'results_map_bayes'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
