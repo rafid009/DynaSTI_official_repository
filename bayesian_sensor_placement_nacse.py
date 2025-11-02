@@ -400,6 +400,7 @@ for i, test_batch in enumerate(test_loader):
     coord_max = coord_max + expand
 
     bounds = [coord_min, coord_max]
+    print(f"Bounds for test batch {i+1}/{len(test_loader)}: {bounds}")
     decided_locations = []
     for j in range(N):
         if len(decided_locations) > 0:
