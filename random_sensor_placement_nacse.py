@@ -278,7 +278,7 @@ for i, test_batch in enumerate(test_loader):
             test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean.cpu()], dim=-2) #.detach()
             new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2))
             test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
-            test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
+            test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords.unsqueeze(0)], dim=1)
         else:
             test_batch_copy = test_batch
         with tqdm(range(new_locations.shape[0]), desc=f"Processing test batch {i+1}/{len(test_loader)}") as pbar:
