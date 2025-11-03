@@ -328,10 +328,10 @@ def bayes_opt_sensor_placement_batch(
     Y_std = Y_obs.std(dim=0, keepdim=True)
     Y_obs = (Y_obs - Y_mean) / (Y_std + 1e-8)  # normalize
 
-    X_obs_max = X_obs.max(dim=0, keepdim=True)
-    X_obs_min = X_obs.min(dim=0, keepdim=True)
-    X_obs = (X_obs - X_obs_min) / (X_obs_max - X_obs_min)  # normalize
-
+    # X_obs_max = X_obs.max(dim=0, keepdim=True)
+    # X_obs_min = X_obs.min(dim=0, keepdim=True)
+    X_obs = (X_obs - bounds_t[0]) / (bounds_t[1] - bounds_t[0])  # normalize
+    bounds_t_t = torch.tensor([[0.0]*dim, [1.0]*dim], dtype=torch.float32, device=device)
     # Step 2: BO iterations
     for i in range(n_iter):
         # Fit GP
@@ -339,10 +339,10 @@ def bayes_opt_sensor_placement_batch(
         best_f = Y_obs.min()
 
         # Propose next batch of q sensor locations
-        candidate = get_next_batch(gp, best_f, bounds_t)
+        candidate = get_next_batch(gp, best_f, bounds_t_t)
         print(f"candidate shape: {candidate.shape}")
 
-        unnormalized_candidate = candidate * (X_obs_std + 1e-8) + X_obs_mean
+        unnormalized_candidate = candidate * (bounds_t[1] - bounds_t[0]) + bounds_t[0]
         # Evaluate objective at each new candidate
         new_Y = evaluate_uncertainty(model, test_batch, unnormalized_candidate, M, num_samples)
         # print(f"new_Y shape: {new_Y.shape}")
@@ -351,7 +351,7 @@ def bayes_opt_sensor_placement_batch(
         X_obs = torch.cat([X_obs, candidate], dim=0)
         Y_obs = torch.cat([Y_obs, new_Y.unsqueeze(0)], dim=0)
 
-        print(f"Iter {i+1}: coord={candidate.cpu().numpy().flatten()} -> unct={new_Y.item():.6f}")
+        print(f"Iter {i+1}: coord={unnormalized_candidate.cpu().numpy().flatten()} -> unct={new_Y.item():.6f}")
 
 
     # Return best observed point
