@@ -322,6 +322,13 @@ def bayes_opt_sensor_placement_batch(
     # Step 1: initial random data
     X_obs, Y_obs = generate_initial_data(model, test_batch, M, bounds_t, n_init, num_samples)
     print(f"Initialized with {n_init} random points")
+    Y_mean = Y_obs.mean(dim=0, keepdim=True)
+    Y_std = Y_obs.std(dim=0, keepdim=True)
+    Y_obs = (Y_obs - Y_mean) / (Y_std + 1e-8)  # normalize
+
+    X_obs_mean = X_obs.mean(dim=0, keepdim=True)
+    X_obs_std = X_obs.std(dim=0, keepdim=True)
+    X_obs = (X_obs - X_obs_mean) / (X_obs_std + 1e-8)  # normalize
 
     # Step 2: BO iterations
     for i in range(n_iter):
@@ -333,8 +340,9 @@ def bayes_opt_sensor_placement_batch(
         candidate = get_next_batch(gp, best_f, bounds_t)
         print(f"candidate shape: {candidate.shape}")
 
+        unnormalized_candidate = candidate * (X_obs_std + 1e-8) + X_obs_mean
         # Evaluate objective at each new candidate
-        new_Y = evaluate_uncertainty(model, test_batch, candidate, M, num_samples)
+        new_Y = evaluate_uncertainty(model, test_batch, unnormalized_candidate, M, num_samples)
         # print(f"new_Y shape: {new_Y.shape}")
         # print(f"X_obs shape: {X_obs.shape}, Y_obs shape: {Y_obs.shape}")
         # Update dataset
@@ -428,7 +436,7 @@ for i, test_batch in enumerate(test_loader):
             test_batch_copy = test_batch.copy()
 
         best_coord, best_val, X_obs, Y_obs = bayes_opt_sensor_placement_batch(
-            model_diff_saits, test_batch_copy, bounds, N, M, n_init=20, n_iter=50,
+            model_diff_saits, test_batch_copy, bounds, N, M, n_init=100, n_iter=50,
             num_samples=50)
         locations_and_uncertainty = NewLocationCoordsAndUncertainty(best_coord, best_val.item())
         decided_locations.append(locations_and_uncertainty)
