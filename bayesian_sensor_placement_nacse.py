@@ -399,7 +399,7 @@ for i, test_batch in enumerate(test_loader):
     coord_min = coord_min - expand
     coord_max = coord_max + expand
 
-    bounds = torch.stack([coord_min, coord_max], dim=0).astype(torch.float32)
+    bounds = torch.stack([coord_min, coord_max], dim=0).to(torch.float32)
     print(f"Bounds for test batch {i+1}/{len(test_loader)}: {bounds}")
     decided_locations = []
     for j in range(N):
