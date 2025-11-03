@@ -16,10 +16,12 @@ from models.ignnk import IGNNK
 import pandas as pd
 from tqdm import tqdm
 from botorch.models import SingleTaskGP
-from botorch.fit import fit_gpytorch_mll
+from botorch.fit import fit_gpytorch_mll, fit_gpytorch_mll_scipy
 from botorch.acquisition import ExpectedImprovement
 from botorch.optim import optimize_acqf
 from gpytorch.mlls import ExactMarginalLogLikelihood
+import botorch
+botorch.settings.debug(True)
 
 matplotlib.rc('xtick', labelsize=20) 
 matplotlib.rc('ytick', labelsize=20) 
@@ -285,7 +287,7 @@ def generate_initial_data(model, test_batch, M, bounds, n_init, nsample=50):
 def fit_model(X, Y):
     gp = SingleTaskGP(X, Y)
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-    fit_gpytorch_mll(mll)
+    fit_gpytorch_mll_scipy(mll)
     return gp
 
 # ===============================================================
@@ -326,9 +328,9 @@ def bayes_opt_sensor_placement_batch(
     Y_std = Y_obs.std(dim=0, keepdim=True)
     Y_obs = (Y_obs - Y_mean) / (Y_std + 1e-8)  # normalize
 
-    X_obs_mean = X_obs.mean(dim=0, keepdim=True)
-    X_obs_std = X_obs.std(dim=0, keepdim=True)
-    X_obs = (X_obs - X_obs_mean) / (X_obs_std + 1e-8)  # normalize
+    X_obs_max = X_obs.max(dim=0, keepdim=True)
+    X_obs_min = X_obs.min(dim=0, keepdim=True)
+    X_obs = (X_obs - X_obs_min) / (X_obs_max - X_obs_min)  # normalize
 
     # Step 2: BO iterations
     for i in range(n_iter):
