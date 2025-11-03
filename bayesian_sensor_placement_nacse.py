@@ -335,11 +335,11 @@ def bayes_opt_sensor_placement_batch(
 
         # Evaluate objective at each new candidate
         new_Y = evaluate_uncertainty(model, test_batch, candidate, M, num_samples)
-        print(f"new_Y shape: {new_Y.shape}")
-        print(f"X_obs shape: {X_obs.shape}, Y_obs shape: {Y_obs.shape}")
+        # print(f"new_Y shape: {new_Y.shape}")
+        # print(f"X_obs shape: {X_obs.shape}, Y_obs shape: {Y_obs.shape}")
         # Update dataset
         X_obs = torch.cat([X_obs, candidate], dim=0)
-        Y_obs = torch.cat([Y_obs, new_Y], dim=0)
+        Y_obs = torch.cat([Y_obs, new_Y.unsqueeze(0)], dim=0)
 
         print(f"Iter {i+1}: coord={candidate.cpu().numpy().flatten()} -> unct={new_Y.item():.6f}")
 
