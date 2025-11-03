@@ -291,21 +291,20 @@ def fit_model(X, Y):
 # ===============================================================
 # 4️⃣  Optimize Batch Acquisition Function (qEI)
 # ===============================================================
-def get_next_batch(gp, best_f, bounds, q=3):
+def get_next_batch(gp, best_f, bounds):
     """
     Optimize q-Expected Improvement to select a batch of q new sensor locations.
     """
-    qei = ExpectedImprovement(model=gp, best_f=best_f)
+    ei = ExpectedImprovement(model=gp, best_f=best_f)
 
-    candidates, acq_value = optimize_acqf(
-        acq_function=qei,
+    candidate, acq_value = optimize_acqf(
+        acq_function=ei,
         bounds=bounds,
-        q=q,                        # batch size
-        num_restarts=10,
-        raw_samples=128,
-        options={"batch_limit": 5, "maxiter": 200},
+        q=1,                    # number of candidates per iteration
+        num_restarts=5,
+        raw_samples=100,
     )
-    return candidates.detach()
+    return candidate.detach()
 
 # ===============================================================
 # 5️⃣  Main Batch Bayesian Optimization Loop
@@ -331,10 +330,10 @@ def bayes_opt_sensor_placement_batch(
         best_f = Y_obs.min()
 
         # Propose next batch of q sensor locations
-        candidate = get_next_batch(gp, best_f, bounds_t, q=N)
+        candidate = get_next_batch(gp, best_f, bounds_t)
 
         # Evaluate objective at each new candidate
-        new_Y = evaluate_uncertainty(model, test_batch, candidate, N, M, num_samples)
+        new_Y = evaluate_uncertainty(model, test_batch, candidate, M, num_samples)
 
         # Update dataset
         X_obs = torch.cat([X_obs, candidate], dim=0)
