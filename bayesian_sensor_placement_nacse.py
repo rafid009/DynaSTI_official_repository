@@ -287,7 +287,7 @@ def generate_initial_data(model, test_batch, M, bounds, n_init, nsample=50):
 def fit_model(X, Y):
     gp = SingleTaskGP(X, Y)
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-    fit_gpytorch_mll_scipy(mll)
+    fit_gpytorch_mll(mll)
     return gp
 
 # ===============================================================
@@ -435,6 +435,7 @@ for i, test_batch in enumerate(test_loader):
             test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean.cpu()], dim=-2) #.detach()
             new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2))
             test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
+            print(f" spatial info: {test_batch_copy['spatial_info'].shape}, decided coords shape: {decided_coords.shape}")
             test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
         else:
             test_batch_copy = test_batch.copy()
