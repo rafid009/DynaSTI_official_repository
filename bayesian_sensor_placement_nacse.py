@@ -416,8 +416,8 @@ for i, test_batch in enumerate(test_loader):
     for j in range(N):
         if len(decided_locations) > 0:
             decided_coords = torch.stack([loc_unc.coords for loc_unc in decided_locations], dim=0)
-            # if len(decided_coords.shape) < 3:
-            #     decided_coords = decided_coords.unsqueeze(0)
+            if len(decided_coords.shape) < 3:
+                decided_coords = decided_coords.unsqueeze(0)
             test_batch_copy = test_batch.copy()
             # test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
             test_batch_copy['missing_data_loc'] = decided_coords.reshape((1, -1, 3))
@@ -436,7 +436,7 @@ for i, test_batch in enumerate(test_loader):
             new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2))
             test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
             print(f" spatial info: {test_batch_copy['spatial_info'].shape}, decided coords shape: {decided_coords.shape}")
-            test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
+            test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=1)
         else:
             test_batch_copy = test_batch.copy()
 
