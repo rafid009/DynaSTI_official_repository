@@ -422,18 +422,18 @@ for i, test_batch in enumerate(test_loader):
             # test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
             test_batch_copy['missing_data_loc'] = decided_coords.reshape((1, -1, 3))
             test_batch_copy['missing_data'] = None
-            test_batch_copy['gt_mask'] = torch.zeros((1, n_steps, decided_coords.shape[0], 2))
-            test_batch_copy['missing_data_mask'] = torch.ones((1, n_steps, decided_coords.shape[0], 2))
+            test_batch_copy['gt_mask'] = torch.zeros((1, n_steps, decided_coords.shape[1], 2))
+            test_batch_copy['missing_data_mask'] = torch.ones((1, n_steps, decided_coords.shape[1], 2))
             with torch.no_grad():
-                outputs_test_copy = model_diff_saits.evaluate(test_batch_copy, nsample, missing_dims=decided_coords.shape[0])
+                outputs_test_copy = model_diff_saits.evaluate(test_batch_copy, nsample, missing_dims=decided_coords.shape[1])
                 samples_test_copy, _, _, _, _, _, _, _, _, _ = outputs_test_copy
                 samples_test_copy = samples_test_copy.permute(0, 1, 3, 2)
                 samples_test_copy_mean = samples_test_copy.mean(dim=1)  # (B,L,N*K)
-            samples_test_copy_mean = samples_test_copy_mean.reshape(1, samples_test_copy_mean.shape[1], decided_coords.shape[0], 2)
+            samples_test_copy_mean = samples_test_copy_mean.reshape(1, samples_test_copy_mean.shape[1], decided_coords.shape[1], 2)
             
             test_batch_copy = test_batch.copy()
             test_batch_copy['observed_data'] = torch.cat([test_batch_copy['observed_data'], samples_test_copy_mean.cpu()], dim=-2) #.detach()
-            new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[0], 2))
+            new_obs_mask = torch.ones((1, n_steps, decided_coords.shape[1], 2))
             test_batch_copy['observed_mask'] = torch.cat([test_batch_copy['observed_mask'], new_obs_mask], dim=-2) #.detach()
             print(f" spatial info: {test_batch_copy['spatial_info'].shape}, decided coords shape: {decided_coords.shape}")
             test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=1)
