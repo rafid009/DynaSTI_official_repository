@@ -218,10 +218,12 @@ class NewLocationCoordsAndUncertainty:
     def __repr__(self):
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True, sparse=True)
-
 N = 4
-M = 5  # Number of virtual sensors to evaluate uncertainty on
+M = 5 # Number of virtual sensors to evaluate uncertainty on
+
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True, sparse=True, missing_dims=M)
+
+  
 lr = 0.01
 total_points = 50
 iters = 10 #00
