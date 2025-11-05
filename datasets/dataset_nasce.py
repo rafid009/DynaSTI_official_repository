@@ -407,7 +407,7 @@ class NASCE_Dataset(Dataset):
                             
                             if sparse:
                                 temp_obs_val = X[i].reshape(L, -1, 2)
-                                indices = np.random.choice(temp_obs_val.shape[1], temp_obs_val.shape[1] * 0.3, replace=False)
+                                indices = np.random.choice(temp_obs_val.shape[1], temp_obs_val.shape[1] * 0.2, replace=False)
                                 temp_obs_val = temp_obs_val[:, indices, :]
                             
                                 obs_val = np.nan_to_num(temp_obs_val, copy=True)
