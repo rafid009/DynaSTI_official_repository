@@ -218,12 +218,12 @@ class NewLocationCoordsAndUncertainty:
     def __repr__(self):
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True, sparse=True)
 
-N = 5
-M = 10
+N = 4
+M = 5  # Number of virtual sensors to evaluate uncertainty on
 lr = 0.01
-total_points = 100
+total_points = 50
 iters = 10 #00
 folder = 'results_map_random'
 if not os.path.isdir(folder):
@@ -244,7 +244,7 @@ for i, test_batch in enumerate(test_loader):
         os.makedirs(f"{folder}/{i}")
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
-    new_locations = generate_uniform_points_around_targets(missing_locations, total_points)
+    new_locations = generate_uniform_points_around_targets(missing_locations, total_points, expand_ratio=0.6)
     # new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/decided_locations.csv').to_numpy(), dtype=torch.float32)
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
@@ -254,7 +254,7 @@ for i, test_batch in enumerate(test_loader):
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
-    
+    exit()
     decided_locations = []
     for k in range(N):
         print(f"Missing sensor {k+1}/{N} processing...")

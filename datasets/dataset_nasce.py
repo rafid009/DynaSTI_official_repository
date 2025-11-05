@@ -248,7 +248,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -405,11 +405,21 @@ class NASCE_Dataset(Dataset):
                             missing_data = None
                             missing_data_mask = np.ones((L, missing_dims * 2))
                             
-                            obs_val = np.nan_to_num(X[i], copy=True)
-                            values = X[i].copy()
+                            if sparse:
+                                temp_obs_val = X[i].reshape(L, -1, 2)
+                                indices = np.random.choice(temp_obs_val.shape[1], temp_obs_val.shape[1] * 0.3, replace=False)
+                                temp_obs_val = temp_obs_val[:, indices, :]
+                            
+                                obs_val = np.nan_to_num(temp_obs_val, copy=True)
+                                values = temp_obs_val.copy()
+                                X_loc_temp = X_loc[indices, :]
+                            else:
+                                obs_val = np.nan_to_num(X[i], copy=True)
+                                values = X[i].copy()
+                                X_loc_temp = X_loc
                             obs_mask = ~np.isnan(obs_val)
                             mask = np.zeros((L, missing_dims * 2))
-                            X_loc_temp = X_loc
+                            
                             obs_val_pristi = None
                             mask_pristi = None
                             obs_mask_pristi = None
@@ -548,12 +558,12 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False):
     # np.random.seed(seed=seed)
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=10 if is_multi else -1, is_pristi=is_pristi, southeast=southeast)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=10 if is_multi else -1, is_pristi=is_pristi, southeast=southeast, sparse=sparse)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
