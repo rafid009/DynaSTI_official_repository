@@ -248,7 +248,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False) -> None:
         super().__init__()
         
         self.observed_values = []

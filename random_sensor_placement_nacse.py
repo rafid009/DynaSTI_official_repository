@@ -221,7 +221,7 @@ class NewLocationCoordsAndUncertainty:
 N = 4
 M = 5 # Number of virtual sensors to evaluate uncertainty on
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True, sparse=True, missing_dims=M)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=True, sparse=False, missing_dims=M)
 
   
 lr = 0.01
@@ -256,7 +256,7 @@ for i, test_batch in enumerate(test_loader):
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
-
+    exit()
     decided_locations = []
     for k in range(N):
         print(f"Missing sensor {k+1}/{N} processing...")
