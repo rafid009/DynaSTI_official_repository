@@ -425,7 +425,23 @@ class NASCE_Dataset(Dataset):
                             obs_mask_pristi = None
                         else:
                             is_dynamic = dynamic_rate != -1
-                            obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                            if parts:
+                                bounds = [[-123.5,46.2083332999999996, 44.5], [-121.0674800000000033, 45.3]]
+                                indices = []
+                                for idx in range(X_loc_test.shape[0]):
+                                    lon, lat, elev = X_loc_test[idx]
+                                    if bounds[0][0] <= lon <= bounds[1][0] and bounds[0][1] <= lat <= bounds[1][1]:
+                                        indices.append(idx)
+                                X_test_part = X_test[i].reshape(L, -1, 2)[:, indices, :]
+                                X_loc_test_part = X_loc_test[indices, :]
+                                obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                                                                            forward_trial=forward_trial, random_trial=random_trial, \
+                                                                                pattern=pattern, partial_bm_config=partial_bm_config, \
+                                                                                    spatial=spatial, X_test=X_test_part, \
+                                                                                        X_loc_train=X_loc,\
+                                                                                        X_loc_test=X_loc_test_part, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
+                            else:
+                                obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
                                                                             forward_trial=forward_trial, random_trial=random_trial, \
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test[i], \
@@ -462,9 +478,22 @@ class NASCE_Dataset(Dataset):
                             self.gt_intact.append(values)
 
                 else:
-                    obs_val, obs_mask, mask = parse_data(X[i], rate, False, length, include_features=include_features, \
+                    if parts:
+                        bounds = [[-124.0666666999999990,45.3], [-123.5, 46.2083332999999996]]
+                        indices = []
+                        for idx in range(X_loc.shape[0]):
+                            lon, lat, elev = X_loc[idx]
+                            if bounds[0][0] <= lon <= bounds[1][0] and bounds[0][1] <= lat <= bounds[1][1]:
+                                indices.append(idx)
+                        X_part = X[i].reshape(L, -1, 2)[:, indices, :]
+                        X_loc_part = X_loc[indices, :]
+                        obs_mask = ~np.isnan(X_part)
+                        X_loc_temp = X_loc_part
+                        obs_val = np.nan_to_num(X_part, copy=True)
+                    else:
+                        obs_val, obs_mask, mask = parse_data(X[i], rate, False, length, include_features=include_features, \
                                                                         forward_trial=forward_trial, random_trial=random_trial)
-                
+                        X_loc_temp = X_loc
                 
                     if (is_test or is_valid) and missing_data_mask.sum() == 0:
                         continue
@@ -477,18 +506,18 @@ class NASCE_Dataset(Dataset):
                             self.missing_data_loc.append(missing_data_loc)
                             # print(f"missing data loc: {missing_data_loc}")
                     else:
-                        self.spatial_info.append(X_loc)
+                        self.spatial_info.append(X_loc_temp)
                     
                     
                     self.observed_masks.append(obs_mask)
-                    self.gt_masks.append(mask)
+                    # self.gt_masks.append(mask)
 
 
-                    if is_test or is_valid:
-                        self.gt_intact.append(values)
+                    # if is_test or is_valid:
+                    #     self.gt_intact.append(values)
 
 
-            self.gt_masks = torch.tensor(np.array(self.gt_masks), dtype=torch.float32)   
+               
             self.observed_values = torch.tensor(np.array(self.observed_values), dtype=torch.float32)
             self.spatial_info = torch.tensor(np.array(self.spatial_info, dtype=np.float64), dtype=torch.float64)
             self.observed_masks = torch.tensor(np.array(self.observed_masks), dtype=torch.float32)
@@ -498,6 +527,7 @@ class NASCE_Dataset(Dataset):
                 self.gt_masks_pristi = torch.tensor(np.array(self.gt_masks_pristi), dtype=torch.float32)
             
             if is_test or is_valid:
+                self.gt_masks = torch.tensor(np.array(self.gt_masks), dtype=torch.float32)
                 self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
                 if self.is_separate:
                     self.missing_data = torch.tensor(np.array(self.missing_data), dtype=torch.float32)
