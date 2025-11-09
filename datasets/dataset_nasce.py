@@ -433,7 +433,9 @@ class NASCE_Dataset(Dataset):
                                     if bounds[0][0] <= lon <= bounds[1][0] and bounds[0][1] <= lat <= bounds[1][1]:
                                         indices.append(idx)
                                 X_part = X[i].reshape(L, -1, 2)[:, indices, :]
+                                X_part = X_part.reshape(L, -1)
                                 X_loc_part = X_loc[indices, :]
+
 
 
 
@@ -444,6 +446,7 @@ class NASCE_Dataset(Dataset):
                                     if bounds[0][0] <= lon <= bounds[1][0] and bounds[0][1] <= lat <= bounds[1][1]:
                                         indices.append(idx)
                                 X_test_part = X_test[i].reshape(L, -1, 2)[:, indices, :]
+                                X_test_part = X_test_part.reshape(L, -1)
                                 X_loc_test_part = X_loc_test[indices, :]
                                 obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X_part, rate, is_test, length, include_features=include_features, \
                                                                             forward_trial=forward_trial, random_trial=random_trial, \
