@@ -358,8 +358,8 @@ def bayes_opt_sensor_placement_batch(
     best_idx = torch.argmin(Y_obs)
     best_coord = X_obs[best_idx].cpu()
     best_coord = best_coord * (bounds[1] - bounds[0]) + bounds[0]  # unnormalize
-    best_val = Y_obs[best_idx].cpu()
-    best_val = best_val * Y_std + Y_mean  # unnormalize
+    best_val = Y_obs[best_idx]
+    best_val = (best_val * Y_std + Y_mean).cpu()  # unnormalize
     return best_coord, best_val, X_obs, Y_obs
 
 class NewLocationCoordsAndUncertainty:
