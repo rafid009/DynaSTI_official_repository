@@ -426,6 +426,17 @@ class NASCE_Dataset(Dataset):
                         else:
                             is_dynamic = dynamic_rate != -1
                             if parts:
+                                bounds = [[-124.0666666999999990,45.3], [-123.5, 46.2083332999999996]]
+                                indices = []
+                                for idx in range(X_loc.shape[0]):
+                                    lon, lat, elev = X_loc[idx]
+                                    if bounds[0][0] <= lon <= bounds[1][0] and bounds[0][1] <= lat <= bounds[1][1]:
+                                        indices.append(idx)
+                                X_part = X[i].reshape(L, -1, 2)[:, indices, :]
+                                X_loc_part = X_loc[indices, :]
+
+
+
                                 bounds = [[-123.5,46.2083332999999996, 44.5], [-121.0674800000000033, 45.3]]
                                 indices = []
                                 for idx in range(X_loc_test.shape[0]):
@@ -434,11 +445,11 @@ class NASCE_Dataset(Dataset):
                                         indices.append(idx)
                                 X_test_part = X_test[i].reshape(L, -1, 2)[:, indices, :]
                                 X_loc_test_part = X_loc_test[indices, :]
-                                obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
+                                obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X_part, rate, is_test, length, include_features=include_features, \
                                                                             forward_trial=forward_trial, random_trial=random_trial, \
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test_part, \
-                                                                                        X_loc_train=X_loc,\
+                                                                                        X_loc_train=X_loc_part,\
                                                                                         X_loc_test=X_loc_test_part, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
                             else:
                                 obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
