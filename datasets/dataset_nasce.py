@@ -426,7 +426,8 @@ class NASCE_Dataset(Dataset):
                         else:
                             is_dynamic = dynamic_rate != -1
                             if parts:
-                                bounds = [[-124.0666666999999990,45.3], [-123.5, 46.2083332999999996]]
+                    
+                                bounds = [[-123.5, 44.5], [-121.0674800000000033, 45.5]] #[[-124.0666666999999990,45.3], [-123.5, 46.2083332999999996]]
                                 indices = []
                                 for idx in range(X_loc.shape[0]):
                                     lon, lat, elev = X_loc[idx]
@@ -439,7 +440,7 @@ class NASCE_Dataset(Dataset):
 
 
 
-                                bounds = [[-123.5,46.2083332999999996, 44.5], [-121.0674800000000033, 45.3]]
+                                bounds = [[-124.0666666999999990,45.0], [-123.5, 46.2083332999999996]]
                                 indices = []
                                 for idx in range(X_loc_test.shape[0]):
                                     lon, lat, elev = X_loc_test[idx]
