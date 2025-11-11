@@ -187,8 +187,7 @@ with torch.no_grad():
         df_decided = pd.read_csv(decided_locations_file)
         decided_coords = df_decided[['longitude', 'latitude', 'elevation']].values
         decided_coords = torch.tensor(decided_coords, dtype=torch.float32)
-        if len(decided_coords.shape) < 3:
-            decided_coords = decided_coords.unsqueeze(0)
+
         test_batch_copy = test_batch.copy()
         # test_batch_copy['spatial_info'] = torch.cat([test_batch_copy['spatial_info'], decided_coords], dim=0)
         test_batch_copy['missing_data_loc'] = decided_coords.reshape((1, -1, 3))
