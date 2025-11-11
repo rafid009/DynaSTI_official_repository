@@ -43,6 +43,7 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
                             if X_loc_test[i,0] == loc[0] and X_loc_test[i,1] == loc[1] and X_loc_test[i,2] == loc[2]:
                                 index.append(i)
                                 break
+                    index = np.array(index)
                 else:
                     index = np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False)
             else:
