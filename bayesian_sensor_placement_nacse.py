@@ -381,7 +381,7 @@ train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_feat
 lr = 0.01
 total_points = 1000
 iters = 10 #00
-expand_ratio = 0.1
+expand_ratio = 0.8
 folder = 'results_map_bayes_parts'
 if not os.path.isdir(folder):
     os.makedirs(folder)
