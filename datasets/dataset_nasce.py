@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import json
+import pandas as pd
 torch.set_printoptions(precision=10)
 
 def dynamic_sensor_selection(X_train, X_loc, rate=0.5, L=30, K=2):
@@ -16,7 +17,7 @@ def dynamic_sensor_selection(X_train, X_loc, rate=0.5, L=30, K=2):
     return X_train, X_loc
 
 
-def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):
+def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, target_location_file=None):
     """Get mask of random points (missing at random) across channels based on k,
     where k == number of data points. Mask of sample's shape where 0's to be imputed, and 1's to preserved
     as per ts imputers"""
@@ -31,7 +32,19 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
         # print(f"evals: {evals.shape}")
         if index == -1:
             if missing_dims != -1:
-                index = np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False)
+                if target_location_file is not None:
+                    target_locs = None
+                    with open(target_location_file, 'r') as f:
+                        df = pd.read_csv(f)
+                        target_locs = df[['longitude', 'latitude', 'elevation']].values
+                    index = []
+                    for loc in target_locs:
+                        for i in range(X_loc_test.shape[0]):
+                            if X_loc_test[i,0] == loc[0] and X_loc_test[i,1] == loc[1] and X_loc_test[i,2] == loc[2]:
+                                index.append(i)
+                                break
+                else:
+                    index = np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False)
             else:
                 index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], 1, replace=False))
 
@@ -248,7 +261,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -462,7 +475,7 @@ class NASCE_Dataset(Dataset):
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test[i], \
                                                                                         X_loc_train=X_loc,\
-                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
+                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, target_location_file=target_loc_filename)
                         if (is_test or is_valid) and missing_data_mask is not None and missing_data_mask.sum() == 0:
                             continue
                         self.observed_values.append(obs_val)
@@ -604,12 +617,12 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None):
     # np.random.seed(seed=seed)
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, parts=parts)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
