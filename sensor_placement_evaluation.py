@@ -186,6 +186,7 @@ with torch.no_grad():
         decided_locations_file = 'results_map_random_parts/0/decided_locations.csv'
         df_decided = pd.read_csv(decided_locations_file)
         decided_coords = df_decided[['longitude', 'latitude', 'elevation']].values
+        decided_coords = torch.tensor(decided_coords, dtype=torch.float32).to(device)
         if len(decided_coords.shape) < 3:
             decided_coords = decided_coords.unsqueeze(0)
         test_batch_copy = test_batch.copy()
