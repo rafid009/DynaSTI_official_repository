@@ -196,7 +196,7 @@ class Diffusion_base(nn.Module):
     
     def get_spatial_mask_separate(self, observed_data, observed_mask, locations):
         if self.is_multi:
-            num_indices = torch.randint(2, int(observed_data.shape[1]/2), (1,)).item()
+            num_indices = torch.randint(2, int(observed_data.shape[1]/4), (1,)).item()
             missing_data = torch.zeros((observed_data.shape[0], num_indices, observed_data.shape[2], observed_data.shape[3])).to(self.device) #.cuda()
             missing_data_mask = torch.zeros((observed_mask.shape[0], num_indices, observed_mask.shape[2], observed_mask.shape[3])).to(self.device) #.cuda()
             missing_location = torch.zeros((locations.shape[0], num_indices, locations.shape[2])).to(self.device)
@@ -469,7 +469,7 @@ class Diffusion_base(nn.Module):
                     'A_h': A_h
                 }
             predicted_3, attn_spat = self.diffmodel(inputs, t, is_train)
-            print(f"Calc loss predicted: {predicted_3.requires_grad}")
+            # print(f"Calc loss predicted: {predicted_3.requires_grad}")
         elif self.is_pristi:
             # inputs = {
             #     'X': total_input,
@@ -1026,9 +1026,9 @@ class Diffusion_base(nn.Module):
         if self.is_separate:
             missing_location = (missing_location - mean_loc) / std_loc
         if not self.is_pristi:
-            print(f"In forward spatial info 1: {spatial_info.requires_grad}")
+            # print(f"In forward spatial info 1: {spatial_info.requires_grad}")
             spatial_info = (spatial_info - mean_loc) / std_loc
-            print(f"In forward spatial info 2: {spatial_info.requires_grad}")
+            # print(f"In forward spatial info 2: {spatial_info.requires_grad}")
         if self.is_fft:
             B, N, K, L = observed_data.shape
             observed_data = observed_data.permute(0, 1, 3, 2) # B, N, L, K
@@ -1397,17 +1397,17 @@ class Diffusion_base(nn.Module):
             side_info = None
 
         if self.is_separate:
-            print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
+            # print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
             # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
             missing_location = (missing_location - mean_loc) / std_loc
-            print(f"missing location 2: {missing_location.requires_grad}")
+            # print(f"missing location 2: {missing_location.requires_grad}")
             # max_loc: mean_loc
             # min_loc: std_loc
             # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
         if not self.is_pristi:
-            print(f"spatial info 1: {spatial_info.requires_grad}")
+            # print(f"spatial info 1: {spatial_info.requires_grad}")
             spatial_info = (spatial_info - mean_loc) / std_loc
-            print(f"spatial info 2: {spatial_info.requires_grad}")
+            # print(f"spatial info 2: {spatial_info.requires_grad}")
         
         B, N, K, L = observed_data.shape
         observed_data_copy = observed_data.clone()
