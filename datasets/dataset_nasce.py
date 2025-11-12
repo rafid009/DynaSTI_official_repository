@@ -611,7 +611,7 @@ class NASCE_Dataset(Dataset):
             s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, 2)
-        
+        print(s)
         return s
     
     def __len__(self):
