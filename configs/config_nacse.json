@@ -6,7 +6,7 @@
     "is_pristi": false,
     "is_separate": true,
     "train": {
-        "epochs": 100,
+        "epochs": 2000,
         "batch_size": 16,
         "lr": 1.0e-4 
     },      

@@ -163,40 +163,40 @@ print(f"\nDynaSTI FFT training starts.....\n")
 
 
 ############################## PriSTI ##############################
-train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=is_multi, is_pristi=True)
-config['is_pristi'] = True
-config['is_dit_ca2'] = False
-config['is_separate'] = False
-config['adj_file'] = 'nacse'
-config['train_stations'] = 143
-config['model']['d_spatial'] = 179
-config['model']['use_guide'] = True
-config['model']['mask_sensor'] = []
-config['train']['lr'] = 1e-05
-config['train']['epochs'] = 1000
-config['model']['d_time'] = 30
-config['fft'] = False
-is_ema = False
-print(f"PriSTI config: {config}")
-model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
+# train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=is_multi, is_pristi=True)
+# config['is_pristi'] = True
+# config['is_dit_ca2'] = False
+# config['is_separate'] = False
+# config['adj_file'] = 'nacse'
+# config['train_stations'] = 143
+# config['model']['d_spatial'] = 179
+# config['model']['use_guide'] = True
+# config['model']['mask_sensor'] = []
+# config['train']['lr'] = 1e-05
+# config['train']['epochs'] = 1000
+# config['model']['d_time'] = 30
+# config['fft'] = False
+# is_ema = False
+# print(f"PriSTI config: {config}")
+# model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
-filename = f"model_pristi_nacse.pth"
-print(f"\nDynaSTI training starts.....\n")
+# filename = f"model_pristi_nacse.pth"
+# print(f"\nDynaSTI training starts.....\n")
 
-train(
-    model_pristi,
-    config["train"],
-    train_loader_pristi,
-    valid_loader=test_loader_pristi,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"nacse"
-)
+# train(
+#     model_pristi,
+#     config["train"],
+#     train_loader_pristi,
+#     valid_loader=test_loader_pristi,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"nacse"
+# )
 
 # model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
