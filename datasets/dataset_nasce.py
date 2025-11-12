@@ -606,12 +606,12 @@ class NASCE_Dataset(Dataset):
             if len(self.missing_data_mask) != 0:
                 s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data_mask[index].shape[0], -1, 2)
             s['missing_data_loc'] = self.missing_data_loc[index]
-        if len(self.gt_masks) == 0:
+        if len(self.gt_masks) == 0 and (self.is_test or self.is_valid):
             s["gt_mask"] = None
             s['gt_mask_pristi'] = None
         else:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, 2)
-        print(s)
+
         return s
     
     def __len__(self):
