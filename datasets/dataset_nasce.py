@@ -540,7 +540,7 @@ class NASCE_Dataset(Dataset):
                     
                     
                     self.observed_masks.append(obs_mask)
-                    # self.gt_masks.append(mask)
+                    self.gt_masks.append(mask)
 
 
                     # if is_test or is_valid:
@@ -606,10 +606,7 @@ class NASCE_Dataset(Dataset):
             if len(self.missing_data_mask) != 0:
                 s['missing_data_mask'] = self.missing_data_mask[index].reshape(self.missing_data_mask[index].shape[0], -1, 2)
             s['missing_data_loc'] = self.missing_data_loc[index]
-        if len(self.gt_masks) == 0 and (self.is_test or self.is_valid):
-            s["gt_mask"] = None
-            s['gt_mask_pristi'] = None
-        else:
+        if len(self.gt_masks) != 0:
             s["gt_mask"] = self.gt_masks[index].reshape(self.gt_masks[index].shape[0], -1, 2)
 
         return s
