@@ -173,6 +173,7 @@ with torch.no_grad():
         samples_mean = samples.mean(dim=1)  # (B,L,N*K)
         spatial_locs = test_batch['spatial_info'].to(device)
         missing_locs = test_batch['missing_data_loc'].numpy()  # (M, 3)
+        print(f"missing_locs shape: {missing_locs.shape}")
         print(f"attn_spat_mean shape: {attn_spat_mean.shape}, spatial_locs shape: {spatial_locs.shape}")
 
         attn_spat_mean = attn_spat_mean.unsqueeze(-1).cpu().numpy()  # (M, N, 1)
