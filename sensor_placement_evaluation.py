@@ -165,25 +165,27 @@ model_diff_saits.eval()
 folder_2 = f"results_nacse/attention_map"
 if not os.path.isdir(folder_2):
     os.makedirs(folder_2)
-# with torch.no_grad():
-#     for i, test_batch in enumerate(test_loader):
-#         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
-#         samples, _, _, _, _, _, _, _, attn_spat_mean, sttn_spat_std = outputs
-#         samples = samples.permute(0, 1, 3, 2)
-#         samples_mean = samples.mean(dim=1)  # (B,L,N*K)
-#         spatial_locs = test_batch['spatial_info'].to(device)
-#         print(f"attn_spat_mean shape: {attn_spat_mean.shape}, spatial_locs shape: {spatial_locs.shape}")
-#         exit()
-#         attn_spat_mean = attn_spat_mean.squeeze(0).unsqueeze(-1).cpu().numpy()  # (N, 1)
-#         spatial_positions = spatial_locs.squeeze(0).cpu().numpy()  # (N, 3)
+with torch.no_grad():
+    for i, test_batch in enumerate(test_loader):
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, attn_spat_mean, sttn_spat_std = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        samples_mean = samples.mean(dim=1)  # (B,L,N*K)
+        spatial_locs = test_batch['spatial_info'].to(device)
+        print(f"attn_spat_mean shape: {attn_spat_mean.shape}, spatial_locs shape: {spatial_locs.shape}")
+        exit()
+        attn_spat_mean = attn_spat_mean.cpu().numpy()  # (M, N)
+        spatial_positions = spatial_locs.cpu().numpy()  # (N, 3)
 
-#         df_array = np.concatenate([spatial_positions, attn_spat_mean], axis=1)
-#         df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
-#         df_spat_attn.to_csv(f"{folder_2}/attn_map.csv")
+        # for j in range(attn_spat_mean.shape[0]):
+            
+        df_array = np.concatenate([spatial_positions, attn_spat_mean], axis=1)
+        df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
+        df_spat_attn.to_csv(f"{folder_2}/attn_map.csv")
 
-#         break
+        break
 
-# exit()
+exit()
 with torch.no_grad():
     for i, test_batch in enumerate(test_loader):
         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
