@@ -184,7 +184,7 @@ with torch.no_grad():
             if not os.path.isdir(folder_3):
                 os.makedirs(folder_3)
             
-            df_target = pd.DataFrame(missing_locs[j], columns=['longitude', 'latitude', 'elevation'])
+            df_target = pd.DataFrame(np.expand_dims(missing_locs[j], axis=0), columns=['longitude', 'latitude', 'elevation'])
             df_target.to_csv(f"{folder_3}/target_location.csv")
 
             df_array = np.concatenate([spatial_positions[j], attn_spat_mean[j]], axis=-1)
