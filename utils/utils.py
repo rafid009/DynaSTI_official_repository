@@ -921,7 +921,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 if 'DynaSTI-Orig' in models.keys():
                     with torch.no_grad():
                         spat_start = time.time()
-                        output_diff_saits_orig = models['DynaSTI-Orig'].evaluate(test_batch, nsample, latent_size=latent_size, miissing_dims=missing_dims)
+                        output_diff_saits_orig = models['DynaSTI-Orig'].evaluate(test_batch, nsample, latent_size=latent_size, missing_dims=missing_dims)
                         spat_end = time.time()
                         print(f"orig time: {(spat_end-spat_start)/batch_size}s")
                         if 'CSDI' not in models.keys():
@@ -945,7 +945,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 if 'SPAT-SADI' in models.keys():
                     with torch.no_grad():
                         spat_start = time.time()
-                        output_diff_saits = models['SPAT-SADI'].evaluate(test_batch, nsample, latent_size=latent_size, miissing_dims=missing_dims)
+                        output_diff_saits = models['SPAT-SADI'].evaluate(test_batch, nsample, latent_size=latent_size, missing_dims=missing_dims)
                         spat_end = time.time()
                         print(f"spat time: {spat_end-spat_start}s")
                         if 'CSDI' not in models.keys():
