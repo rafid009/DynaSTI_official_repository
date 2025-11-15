@@ -616,7 +616,8 @@ class NASCE_Dataset(Dataset):
 
 
 def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None):
-    # np.random.seed(seed=seed)
+    np.random.seed(seed=100)
+    
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, parts=parts)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
