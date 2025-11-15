@@ -165,35 +165,35 @@ model_diff_saits.eval()
 folder_2 = f"results_nacse_parts/attn_map_inclusive"
 if not os.path.isdir(folder_2):
     os.makedirs(folder_2)
-with torch.no_grad():
-    for i, test_batch in enumerate(test_loader):
-        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
-        samples, _, _, _, _, _, _, _, attn_spat_mean, sttn_spat_std = outputs
-        samples = samples.permute(0, 1, 3, 2)
-        samples_mean = samples.mean(dim=1)  # (B,L,N*K)
-        spatial_locs = test_batch['spatial_info'].to(device)
-        missing_locs = test_batch['missing_data_loc'].squeeze(0).numpy()  # (M, 3)
-        print(f"missing_locs shape: {missing_locs.shape}")
-        print(f"attn_spat_mean shape: {attn_spat_mean.shape}, spatial_locs shape: {spatial_locs.shape}")
+# with torch.no_grad():
+#     for i, test_batch in enumerate(test_loader):
+#         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+#         samples, _, _, _, _, _, _, _, attn_spat_mean, sttn_spat_std = outputs
+#         samples = samples.permute(0, 1, 3, 2)
+#         samples_mean = samples.mean(dim=1)  # (B,L,N*K)
+#         spatial_locs = test_batch['spatial_info'].to(device)
+#         missing_locs = test_batch['missing_data_loc'].squeeze(0).numpy()  # (M, 3)
+#         print(f"missing_locs shape: {missing_locs.shape}")
+#         print(f"attn_spat_mean shape: {attn_spat_mean.shape}, spatial_locs shape: {spatial_locs.shape}")
 
-        attn_spat_mean = attn_spat_mean.unsqueeze(-1).cpu().numpy()  # (M, N, 1)
-        spatial_positions = spatial_locs.squeeze(0).cpu().numpy()  # (N, 3)
-        spatial_positions = np.repeat(spatial_positions[np.newaxis, :, :], attn_spat_mean.shape[0], axis=0)  # (M, N, 3)
-        for j in range(attn_spat_mean.shape[0]):
-            folder_3 = f"{folder_2}/target_{j+1}"
-            if not os.path.isdir(folder_3):
-                os.makedirs(folder_3)
+#         attn_spat_mean = attn_spat_mean.unsqueeze(-1).cpu().numpy()  # (M, N, 1)
+#         spatial_positions = spatial_locs.squeeze(0).cpu().numpy()  # (N, 3)
+#         spatial_positions = np.repeat(spatial_positions[np.newaxis, :, :], attn_spat_mean.shape[0], axis=0)  # (M, N, 3)
+#         for j in range(attn_spat_mean.shape[0]):
+#             folder_3 = f"{folder_2}/target_{j+1}"
+#             if not os.path.isdir(folder_3):
+#                 os.makedirs(folder_3)
             
-            df_target = pd.DataFrame(np.expand_dims(missing_locs[j], axis=0), columns=['longitude', 'latitude', 'elevation'])
-            df_target.to_csv(f"{folder_3}/target_location.csv")
+#             df_target = pd.DataFrame(np.expand_dims(missing_locs[j], axis=0), columns=['longitude', 'latitude', 'elevation'])
+#             df_target.to_csv(f"{folder_3}/target_location.csv")
 
-            df_array = np.concatenate([spatial_positions[j], attn_spat_mean[j]], axis=-1)
-            df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
-            df_spat_attn.to_csv(f"{folder_3}/attn_map.csv")
+#             df_array = np.concatenate([spatial_positions[j], attn_spat_mean[j]], axis=-1)
+#             df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
+#             df_spat_attn.to_csv(f"{folder_3}/attn_map.csv")
 
-        break
+#         break
 
-exit()
+# exit()
 with torch.no_grad():
     for i, test_batch in enumerate(test_loader):
         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
