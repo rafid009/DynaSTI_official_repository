@@ -14,6 +14,7 @@ from models.ema import EMA
 from utils.ignnk_util import train_ignnk
 from models.ignnk import IGNNK
 from models.deep_kriging import prepare_data, train_deep_kriging, get_model
+from pypots.imputation import ImputeFormer
 
 matplotlib.rc('xtick', labelsize=20) 
 matplotlib.rc('ytick', labelsize=20) 

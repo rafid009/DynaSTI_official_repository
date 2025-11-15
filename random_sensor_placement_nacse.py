@@ -246,7 +246,7 @@ for i, test_batch in enumerate(test_loader):
         os.makedirs(f"{folder}/{i}")
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
-    new_locations = generate_uniform_points_around_targets(missing_locations, total_points, expand_ratio=0.8)
+    new_locations = generate_uniform_points_around_targets(missing_locations, total_points, expand_ratio=0.5)
     # new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/decided_locations.csv').to_numpy(), dtype=torch.float32)
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
