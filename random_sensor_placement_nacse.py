@@ -78,7 +78,7 @@ except Exception as e:
 
 model_diff_saits = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
-filename = f"model_dynasti_nacse_multi.pth"
+filename = f"model_dynasti_nacse_sparse.pth"
 print(f"\nDynaSTI training starts.....\n")
 model_folder = 'saved_models_nacse'
 
@@ -105,14 +105,14 @@ if not os.path.isdir(model_folder):
 
 # print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
-# ema = EMA(model_diff_saits)
+ema = EMA(model_diff_saits)
 
-# # Define the file path where the EMA model is saved
-# ema_model_filepath = f"{model_folder}/ema_model_nacse_multi.pth"
+# Define the file path where the EMA model is saved
+ema_model_filepath = f"{model_folder}/ema_model_nacse.pth"
 
-# # Load the saved EMA model
-# ema.load(ema_model_filepath)
-# model_diff_saits = ema.ema_model
+# Load the saved EMA model
+ema.load(ema_model_filepath)
+model_diff_saits = ema.ema_model
 
 models = {
     'SPAT-SADI': model_diff_saits,
@@ -256,7 +256,7 @@ for i, test_batch in enumerate(test_loader):
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
-    exit()
+
     decided_locations = []
     for k in range(N):
         print(f"Missing sensor {k+1}/{N} processing...")
