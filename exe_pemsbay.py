@@ -143,7 +143,7 @@ random = True
 model_diff_saits_fft = DynaSTI_PEMSBAY(config, device, n_spatial=n_spatial)
 autoencoder = None
 
-filename = f"model_dynasti_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}.pth"
+filename = f"model_dynasti_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}.pth"
 print(f"\nDynaSTI FFT training starts.....\n")
 
 # train(
@@ -164,7 +164,7 @@ print(f"\nDynaSTI FFT training starts.....\n")
 ema = EMA(model_diff_saits_fft)
 
 # Define the file path where the EMA model is saved
-ema_model_filepath = f"{model_folder}/ema_model_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}.pth"
+ema_model_filepath = f"{model_folder}/ema_model_fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}.pth"
 
 # Load the saved EMA model
 ema.load(ema_model_filepath)
