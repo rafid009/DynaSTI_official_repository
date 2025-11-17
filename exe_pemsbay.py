@@ -126,8 +126,8 @@ ema = EMA(model_diff_saits)
 ema_model_filepath = f"{model_folder}/ema_model_pemsbay.pth"
 
 # Load the saved EMA model
-ema.load(ema_model_filepath)
-model_diff_saits = ema.ema_model
+# ema.load(ema_model_filepath)
+# model_diff_saits = ema.ema_model
 
 ##################### FFT DynaSTI #######################
 
