@@ -77,7 +77,7 @@ train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_feat
 
 print(f"################### Data loading done ###################")
 
-config_file = sys.argv[1]
+config_file = 'configs/config_awn.json'
 
 try:
     with open(config_file, 'r') as f:
