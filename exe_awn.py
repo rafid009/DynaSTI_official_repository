@@ -108,20 +108,20 @@ model_folder = 'saved_models_awn'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-train(
-    model_diff_saits,
-    config["train"],
-    train_loader,
-    valid_loader=test_loader,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"awn"
-)
+# train(
+#     model_diff_saits,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"awn"
+# )
 # model_diff_saits.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
@@ -144,28 +144,28 @@ config['train']['epoch'] = 600
 config['fft'] = True
 n_iters = 100
 lr = 0.01
-random = True
+random = False
 
 model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(device)
 
 filename = f"model_dynasti_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
 print(f"\nDynaSTI FFT training starts.....\n")
 
-train(
-    model_diff_saits_fft,
-    config["train"],
-    train_loader,
-    valid_loader=test_loader,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
-    latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
-)
+# train(
+#     model_diff_saits_fft,
+#     config["train"],
+#     train_loader,
+#     valid_loader=test_loader,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
+#     latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
+# )
 
 ema = EMA(model_diff_saits_fft)
 
@@ -197,20 +197,20 @@ model_pristi = DynaSTI_AWN(config, device, n_spatial=n_spatial).to(device)
 filename = f"model_pristi_awn.pth"
 print(f"\nDynaSTI training starts.....\n")
 
-train(
-    model_pristi,
-    config["train"],
-    train_loader_pristi,
-    valid_loader=test_loader_pristi,
-    foldername=model_folder,
-    filename=f"{filename}",
-    is_dit=config['is_dit_ca2'],
-    d_spatial=config['model']['d_spatial'],
-    d_time=config['model']['d_time'],
-    is_spat=False,
-    is_ema=is_ema,
-    name=f"awn"
-)
+# train(
+#     model_pristi,
+#     config["train"],
+#     train_loader_pristi,
+#     valid_loader=test_loader_pristi,
+#     foldername=model_folder,
+#     filename=f"{filename}",
+#     is_dit=config['is_dit_ca2'],
+#     d_spatial=config['model']['d_spatial'],
+#     d_time=config['model']['d_time'],
+#     is_spat=False,
+#     is_ema=is_ema,
+#     name=f"awn"
+# )
 
 # model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
@@ -219,23 +219,23 @@ train(
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
 lr = 1e-05 # 1e-06
 max_iter = 2000
-train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
+# train_ignnk(model_ignnk, lr, max_iter, train_loader, test_loader, f"{model_folder}/model_ignnk_{zone}.model")
 
 # model_ignnk.load_state_dict(torch.load(f"{model_folder}/model_ignnk.model"))
 
 ########################## DK ##############################
 coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_loader)
-dk_model = train_deep_kriging(1e-3, 600, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
-dk_model = get_model(n_features)
+# dk_model = train_deep_kriging(1e-3, 600, coords_tensor[:, :2], times_tensor, values_tensor, num_features, f"{model_folder}/deep_kriging.model")
+# dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
-    'DynaSTI-Orig': model_diff_saits,
+    # 'DynaSTI-Orig': model_diff_saits,
     'SPAT-SADI': model_diff_saits_fft,
-    'MEAN': None,
-    'PriSTI': model_pristi,
+    # 'MEAN': None,
+    # 'PriSTI': model_pristi,
     # 'GP': None,
-    'IGNNK': model_ignnk,
-    'DK': dk_model
+    # 'IGNNK': model_ignnk,
+    # 'DK': dk_model
 
 }
 
@@ -247,8 +247,8 @@ filename = (data_file_test, data_file_test_loc, mean_std_file)
 
 dynamic_rate = -1
 is_subset = False
-evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
-# evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, data=True, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
+# evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='awn', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
+evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='awn', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, dynamic_rate=dynamic_rate, is_subset=is_subset, data=True, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
 
 # dyn_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 # for dynamic_rate in dyn_rates:

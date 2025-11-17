@@ -1228,6 +1228,7 @@ class Diffusion_base(nn.Module):
                 missing_data = missing_data.reshape((-1, L, K))
                 # missing_data_mask = missing_data_mask
                 with torch.enable_grad():
+                    start_time = time.time()
                     result_observed_data = fit_linear_fft_1(
                         observed_data,
                         observed_mask.reshape((-1, L, K)),
@@ -1236,6 +1237,9 @@ class Diffusion_base(nn.Module):
                         lr=latent_size[3],
                         random=latent_size[4]
                     )
+                    end_time = time.time()
+                    print(f"FFT fitting time for observed data: {end_time - start_time} seconds")
+                    exit()
                 observed_fft_coeffs = result_observed_data.coeffs
                 obs_fft_intercept = observed_fft_coeffs.intercept.detach().reshape(observed_fft_coeffs.intercept.shape[0], 1, observed_fft_coeffs.intercept.shape[1])
                 obs_fft_slope = observed_fft_coeffs.slope.detach().reshape(observed_fft_coeffs.slope.shape[0], 1, observed_fft_coeffs.slope.shape[1])
