@@ -373,8 +373,8 @@ class NewLocationCoordsAndUncertainty:
     def __repr__(self):
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
-N = 5
-M = 10  
+N = 4
+M = 5  
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, missing_dims=M, sparse=False)
 
 
@@ -382,7 +382,7 @@ lr = 0.01
 total_points = 1000
 iters = 10 #00
 expand_ratio = 0.8
-folder = 'results_map_bayes_parts'
+folder = 'results_map_bayes_sparse'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
