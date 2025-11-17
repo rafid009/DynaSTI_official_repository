@@ -1588,7 +1588,7 @@ class DynaSTI(nn.Module):
            
         x = torch.transpose(x, 1, 2) # B, K, L
 
-        if self.config['ablation']['spatial']:
+        if self.config['ablation']['se']:
             attn_spat = attn_spat.mean(dim=1).mean(dim=0)
         else:
             attn_spat = None
