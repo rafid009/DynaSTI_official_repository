@@ -8,6 +8,7 @@ import scipy.sparse as sp
 import math
 from sklearn.metrics.pairwise import haversine_distances
 from models.fft_model import fit_linear_fft_1, LinearFFTCoeffs
+import time
 
 def cosine_beta_schedule(timesteps: int, dtype=torch.float32):
     """

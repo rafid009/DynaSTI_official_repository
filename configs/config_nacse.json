@@ -46,6 +46,6 @@
     "ablation": {
         "fe": true,
         "te": true,
-        "spatial": true
+        "se": true
     }
 }

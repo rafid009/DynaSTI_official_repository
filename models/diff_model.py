@@ -1370,7 +1370,7 @@ class DynaSTI(nn.Module):
             
             self.n_block_layers = len(self.blocks)
 
-        if config['ablation']['spatial']:
+        if config['ablation']['se']:
 
 
             self.spatial_blocks = nn.ModuleList([
@@ -1417,7 +1417,7 @@ class DynaSTI(nn.Module):
                 nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
                 nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
 
-        if self.config['ablation']['spatial']:
+        if self.config['ablation']['se']:
             for block in self.spatial_blocks:
                 nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
                 nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
@@ -1510,7 +1510,7 @@ class DynaSTI(nn.Module):
             # print(f"t3: {t3.shape}")
         else:
             noise = noise.reshape((B*L, 1, -1)) # B*L, 1, K+128
-        if self.config['ablation']['spatial']:
+        if self.config['ablation']['se']:
             
             for i in range(len(self.spatial_blocks)):
                 # print(f"noise: {noise.shape}, c_spat: {c1.shape}")
