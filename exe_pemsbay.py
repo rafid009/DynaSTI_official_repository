@@ -161,7 +161,7 @@ train(
     name=f"fft_pemsbay{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}",
     latent_size=(latent_seq_dim, 1, n_iters, lr, random)
 )
-exit()
+
 ema = EMA(model_diff_saits_fft)
 
 # Define the file path where the EMA model is saved
@@ -238,10 +238,10 @@ print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
 dynamic_rate = -1
-dyn_rates = [-1, 0.1, 0.3, 0.5, 0.7, 0.9]
+dyn_rates = [-1]#, 0.1, 0.3, 0.5, 0.7, 0.9]
 for dynamic_rate in dyn_rates:
     print(f"dynamic rates: {dynamic_rate}")
-    # evaluate_imputation_all(models=models, trials=10, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
-    evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
+    evaluate_imputation_all(models=models, trials=3, mse_folder=mse_folder, n_features=n_features, dataset_name='pemsbay', batch_size=2, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, dynamic_rate=dynamic_rate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
+    # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='pemsbay', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, latent_size=(latent_seq_dim, 1, n_iters, lr, random))
 
 # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='metrla', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, data=True, n_stations=n_spatial, n_steps=n_steps,  total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate)
