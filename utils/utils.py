@@ -681,6 +681,39 @@ def get_mean_std(dataset_name, filename, mean=None, std=None):
         train_std = torch.tensor(std, dtype=torch.float32, device=device)
     return train_mean, train_std
 
+def calculate_mis(samples, y_true, alpha=0.1):
+    """
+    Calculate Mean Interval Score (MIS) for diffusion-based probabilistic forecasts.
+    
+    Args:
+        samples (Tensor): shape (S, T, D) 
+                          S = number of stochastic samples
+        y_true  (Tensor): shape (T, D)
+        alpha (float): miscoverage rate (e.g., 0.1 => 90% interval)
+
+    Returns:
+        Tensor (scalar): MIS
+    """
+
+    # Compute quantiles along sample dimension
+    lower = samples.quantile(alpha/2, dim=0)     # shape (T, D)
+    upper = samples.quantile(1 - alpha/2, dim=0) # shape (T, D)
+
+    # Interval width component
+    width = upper - lower
+
+    # Penalties for outside interval
+    under_penalty = (lower - y_true).clamp(min=0)
+    over_penalty  = (y_true - upper).clamp(min=0)
+
+    # Interval score per timestep & variable
+    interval_score = width + (2/alpha) * (under_penalty + over_penalty)
+
+    # Mean across time and dimensions
+    mis = interval_score.mean()
+    return mis
+
+
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
                             data=False, noise=False, filename=None, is_yearly=True, n_features=-1, n_steps=366, pattern=None, 
                             mean=None, std=None, partial_bm_config=None, spatial=False, unnormalize=False,
@@ -709,6 +742,13 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                     'kriging': 0, 'ignnk': 0, 'interpolation': 0, 'gp': 0, 'dk': 0}
     results_mae = {'csdi': 0, 'spat-sadi': 0, 'sadi': 0}
     results_crps = {
+        'csdi_trials':{}, 'csdi': 0, 
+        'spat-sadi_trials': {}, 'spat-sadi': 0,
+        'spat-sadi-orig_trials': {}, 'spat-sadi-orig': 0,
+        'sadi_trials': {}, 'sadi': 0,
+        'pristi_trials': {}, 'pristi': 0
+        }
+    results_mis = {
         'csdi_trials':{}, 'csdi': 0, 
         'spat-sadi_trials': {}, 'spat-sadi': 0,
         'spat-sadi-orig_trials': {}, 'spat-sadi-orig': 0,
@@ -764,6 +804,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         diffsaits_crps_avg_orig = 0
         sadi_crps_avg = 0
         pristi_crps_avg = 0
+
+        diffsaits_mis_avg = 0
+        pristi_mis_avg = 0
+
         trial_miss = 0
         total_batch = 0
         with tqdm(test_loader, mininterval=5.0, maxinterval=50.0) as it:
@@ -1696,9 +1740,11 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         diffsaits_rmse_avg += rmse_diff_saits ** 0.5
                         if is_separate:
                             diff_saits_crps = calc_quantile_CRPS(missing_data, samples_diff_saits, missing_data_mask, 0, 1)
+                            diffsaits_mis = calculate_mis(samples_diff_saits, missing_data, alpha=0.05)
                         else:
                             diff_saits_crps = calc_quantile_CRPS(c_target, samples_diff_saits, eval_points, 0, 1)
                         diffsaits_crps_avg += diff_saits_crps
+                        diffsaits_mis_avg += diffsaits_mis
                     
                     if 'GP' in models.keys():
                         # print(f"pred_gp: {pred_gp.shape}, missing_data: {missing_data.shape}, missing_data_mask: {missing_data_mask.shape}")
@@ -1741,6 +1787,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                         pristi_crps = calc_quantile_CRPS(c_target_pristi, samples_pristi, eval_points_pristi, 0, 1)
                         pristi_crps_avg += pristi_crps
 
+                        pristi_mis = calculate_mis(samples_pristi, c_target_pristi, alpha=0.05)
+                        pristi_mis_avg += pristi_mis
+
                     ###### SAITS ######
                     if 'SAITS' in models.keys():
                         rmse_saits = ((torch.tensor(saits_output, device=device)- c_target) * eval_points) ** 2
@@ -1781,6 +1830,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 results_crps['csdi_trials'][trial] = csdi_crps_avg / total_batch # (batch_size - trial_miss)
                 results_crps['csdi'] += csdi_crps_avg / total_batch # (batch_size - trial_miss)
 
+                
+
             if 'OKriging' in models.keys():
                 results_trials_mse['kriging'][trial] = kriging_rmse_avg / total_batch #  (batch_size - trial_miss)
                 results_mse['kriging'] += kriging_rmse_avg / total_batch #  (batch_size - trial_miss)
@@ -1802,6 +1853,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
 
                 results_crps['spat-sadi_trials'][trial] = diffsaits_crps_avg / total_batch #  (batch_size - trial_miss)
                 results_crps['spat-sadi'] += diffsaits_crps_avg / total_batch #  (batch_size - trial_miss)
+
+                results_trials_mis['spat-sadi'][trial] = diffsaits_mis_avg / total_batch 
+                results_mis['spat-sadi'] += diffsaits_mis_avg / total_batch 
             
             if 'GP' in models.keys():
                 results_trials_mse['gp'][trial] = gp_rmse_avg / total_batch # (batch_size - trial_miss)
@@ -1821,6 +1875,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
 
                 results_crps['pristi_trials'][trial] = pristi_crps_avg /  total_batch # (batch_size - trial_miss)
                 results_crps['pristi'] += pristi_crps_avg / total_batch # (batch_size - trial_miss)
+
+                results_trials_mis['pristi'][trial] = pristi_mis_avg / total_batch 
+                results_mis['pristi'] += pristi_mis_avg / total_batch
 
             results_trials_mse['mean'][trial] = mean_avg_rmse /  total_batch # (batch_size - trial_miss)
             results_mse['mean'] += mean_avg_rmse / total_batch # (batch_size - trial_miss)
@@ -1864,6 +1921,15 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         results_mse['interpolation'] /= trials
         results_mse['gp'] /= trials
         results_mse['dk'] /= trials
+
+        results_crps['csdi'] /= trials
+        results_crps['spat-sadi'] /= trials
+        results_crps['spat-sadi-orig'] /= trials
+        results_crps['sadi'] /= trials
+        results_crps['pristi'] /= trials
+
+        results_mis['spat-sadi'] /= trials
+        results_mis['pristi'] /= trials
         # results_mse['saits'] /= trials
         # results_mse['knn'] /= trials
         # results_mse['mice'] /= trials
@@ -1876,6 +1942,10 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         diffsaits_crps_ci = -1
         diffsaits_trials_orig = -1
         diffsaits_crps_ci_orig = -1
+
+        diffsaits_mis_ci = -1
+        pristi_mis_ci = -1
+
         ignnk_trials = -1
         pristi_trials = -1
         pristi_crps_ci = -1
@@ -1916,6 +1986,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             diffsaits_trials = (z * np.std(diffsaits_trials)) / math.sqrt(len(diffsaits_trials))
             diffsaits_crps_ci = [results_crps['spat-sadi_trials'][i] for i in results_crps['spat-sadi_trials'].keys()]
             diffsaits_crps_ci = (z * np.std(diffsaits_crps_ci)) / math.sqrt(len(diffsaits_crps_ci))
+
+            diffsaits_mis_ci = [results_trials_mis['spat-sadi'][i] for i in results_trials_mis['spat-sadi'].keys()]
+            diffsaits_mis_ci = (z * np.std(diffsaits_mis_ci)) / math.sqrt(len(diffsaits_mis_ci))
         
         if 'GP' in models.keys():
             gp_trials = [results_trials_mse['gp'][i] for i in results_trials_mse['gp'].keys()]
@@ -1934,6 +2007,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             pristi_trials = (z * np.std(pristi_trials)) / math.sqrt(len(pristi_trials))
             pristi_crps_ci = [results_crps['pristi_trials'][i] for i in results_crps['pristi_trials'].keys()]
             pristi_crps_ci = (z * np.std(pristi_crps_ci)) / math.sqrt(len(pristi_crps_ci))
+            pristi_mis_ci = [results_trials_mis['pristi'][i] for i in results_trials_mis['pristi'].keys()]
+            pristi_mis_ci = (z * np.std(pristi_mis_ci)) / math.sqrt(len(pristi_mis_ci))
 
         if 'SADI' in models.keys():
             sadi_trials = [results_trials_mse['sadi'][i] for i in results_trials_mse['sadi'].keys()]
@@ -1987,6 +2062,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         results_crps['sadi'] /= trials
 
         print(f"CRPS:\n\tCSDI: {results_crps['csdi']} ({csdi_crps_ci})\n\tFDynaSTI: {results_crps['spat-sadi']} ({diffsaits_crps_ci})\n\tDynaSTI-Orig: {results_crps['spat-sadi-orig']} ({diffsaits_crps_ci_orig})\n\tSADI: {results_crps['sadi']} ({sadi_crps_ci})\n\tPriSTI: {results_crps['pristi']} ({pristi_crps_ci})")
+        print("\n\n")
+        print(f"MIS:\n\tFDynaSTI: {results_mis['spat-sadi']} ({diffsaits_mis_ci})\n\tPriSTI: {results_mis['pristi']} ({pristi_mis_ci})")
 
         fp = open(f"{mse_folder}/mse-trials-random-{random_trial}-forecasting-{forecasting}-blackout-{not (random_trial or forecasting)}_l_{length}_miss_{missing_ratio}_pbm_{-1 if partial_bm_config is None else partial_bm_config['features']}.json", "w")
         json.dump(results_trials_mse, fp=fp, indent=4)
