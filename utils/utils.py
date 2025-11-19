@@ -697,12 +697,12 @@ def calculate_mis(samples, y_true, alpha=0.1):
 
     # Compute quantiles along sample dimension
     samples = samples.reshape(samples.shape[0], samples.shape[1], -1)
-    y_true = y_true.reshape(y_true.shape[0], 1, -1)
+    y_true = y_true.reshape(y_true.shape[0], -1)
 
-    print(f"samples shape: {samples.shape}, y_true shape: {y_true.shape}")
+    # print(f"samples shape: {samples.shape}, y_true shape: {y_true.shape}")
     lower = samples.quantile(alpha/2, dim=1)     # shape (T, D)
     upper = samples.quantile(1 - alpha/2, dim=1) # shape (T, D)
-    print(f"lower shape: {lower.shape}, upper shape: {upper.shape}")
+    # print(f"lower shape: {lower.shape}, upper shape: {upper.shape}")
     # Interval width component
     width = upper - lower
 
@@ -1858,7 +1858,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 results_crps['spat-sadi_trials'][trial] = diffsaits_crps_avg / total_batch #  (batch_size - trial_miss)
                 results_crps['spat-sadi'] += diffsaits_crps_avg / total_batch #  (batch_size - trial_miss)
 
-                results_trials_mis['spat-sadi'][trial] = diffsaits_mis_avg / total_batch 
+                results_mis['spat-sadi_trials'][trial] = diffsaits_mis_avg / total_batch 
                 results_mis['spat-sadi'] += diffsaits_mis_avg / total_batch 
             
             if 'GP' in models.keys():
