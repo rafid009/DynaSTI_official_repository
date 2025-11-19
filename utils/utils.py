@@ -696,7 +696,7 @@ def calculate_mis(samples, y_true, alpha=0.1):
     """
 
     # Compute quantiles along sample dimension
-    samples = samples.reshape(samples.shape[0], -1)
+    samples = samples.reshape(samples.shape[0], samples.shape[1], -1)
     y_true = y_true.reshape(y_true.shape[0], -1)
 
     print(f"samples shape: {samples.shape}, y_true shape: {y_true.shape}")
