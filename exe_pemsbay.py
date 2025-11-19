@@ -206,6 +206,7 @@ print(f"\nDynaSTI training starts.....\n")
 #     is_ema=is_ema,
 #     name=f"pemsbay"
 # )
+model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
 ########################## IGNNK ##############################
 model_ignnk = IGNNK(h=n_steps * n_features, z=256, k=3).to(device=device)
@@ -223,8 +224,8 @@ coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_lo
 
 
 models = {
-    # 'PriSTI': model_pristi,
-    'SPAT-SADI': model_diff_saits_fft,
+    'PriSTI': model_pristi,
+    # 'SPAT-SADI': model_diff_saits_fft,
     # 'DynaSTI-Orig': model_diff_saits,
     # 'IGNNK': model_ignnk,
     # 'GP': None,

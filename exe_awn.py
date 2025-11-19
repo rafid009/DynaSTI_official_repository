@@ -212,7 +212,7 @@ print(f"\nDynaSTI training starts.....\n")
 #     name=f"awn"
 # )
 
-# model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
+model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
 
 ########################## IGNNK ##############################
@@ -230,9 +230,9 @@ coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_lo
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
     # 'DynaSTI-Orig': model_diff_saits,
-    'SPAT-SADI': model_diff_saits_fft,
+    # 'SPAT-SADI': model_diff_saits_fft,
     # 'MEAN': None,
-    # 'PriSTI': model_pristi,
+    'PriSTI': model_pristi,
     # 'GP': None,
     # 'IGNNK': model_ignnk,
     # 'DK': dk_model
