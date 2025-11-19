@@ -696,10 +696,13 @@ def calculate_mis(samples, y_true, alpha=0.1):
     """
 
     # Compute quantiles along sample dimension
-    print(f"samples shape: {samples.shape}, y_true shape: {y_true.shape}")
+    samples = samples.reshape(samples.shape[0], -1)
+    y_true = y_true.reshape(y_true.shape[0], -1)
+
+    # print(f"samples shape: {samples.shape}, y_true shape: {y_true.shape}")
     lower = samples.quantile(alpha/2, dim=0)     # shape (T, D)
     upper = samples.quantile(1 - alpha/2, dim=0) # shape (T, D)
-    print(f"lower shape: {lower.shape}, upper shape: {upper.shape}")
+    # print(f"lower shape: {lower.shape}, upper shape: {upper.shape}")
     # Interval width component
     width = upper - lower
 
