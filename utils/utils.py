@@ -1926,14 +1926,8 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         results_mse['gp'] /= trials
         results_mse['dk'] /= trials
 
-        results_crps['csdi'] /= trials
-        results_crps['spat-sadi'] /= trials
-        results_crps['spat-sadi-orig'] /= trials
-        results_crps['sadi'] /= trials
-        results_crps['pristi'] /= trials
 
-        results_mis['spat-sadi'] /= trials
-        results_mis['pristi'] /= trials
+
         # results_mse['saits'] /= trials
         # results_mse['knn'] /= trials
         # results_mse['mice'] /= trials
@@ -1991,7 +1985,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             diffsaits_crps_ci = [results_crps['spat-sadi_trials'][i] for i in results_crps['spat-sadi_trials'].keys()]
             diffsaits_crps_ci = (z * np.std(diffsaits_crps_ci)) / math.sqrt(len(diffsaits_crps_ci))
 
-            diffsaits_mis_ci = [results_trials_mis['spat-sadi'][i] for i in results_trials_mis['spat-sadi'].keys()]
+            diffsaits_mis_ci = [results_mis['spat-sadi_trials'][i] for i in results_mis['spat-sadi_trials'].keys()]
             diffsaits_mis_ci = (z * np.std(diffsaits_mis_ci)) / math.sqrt(len(diffsaits_mis_ci))
         
         if 'GP' in models.keys():
@@ -2064,6 +2058,9 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         results_crps['spat-sadi'] /= trials
         results_crps['spat-sadi-orig'] /= trials
         results_crps['sadi'] /= trials
+
+        results_mis['spat-sadi'] /= trials
+        results_mis['pristi'] /= trials
 
         print(f"CRPS:\n\tCSDI: {results_crps['csdi']} ({csdi_crps_ci})\n\tFDynaSTI: {results_crps['spat-sadi']} ({diffsaits_crps_ci})\n\tDynaSTI-Orig: {results_crps['spat-sadi-orig']} ({diffsaits_crps_ci_orig})\n\tSADI: {results_crps['sadi']} ({sadi_crps_ci})\n\tPriSTI: {results_crps['pristi']} ({pristi_crps_ci})")
         print("\n\n")
