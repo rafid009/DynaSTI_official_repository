@@ -1239,7 +1239,7 @@ class Diffusion_base(nn.Module):
                         random=latent_size[4]
                     )
                     end_time = time.time()
-                    print(f"FFT fitting time for observed data: {end_time - start_time} seconds")
+                    # print(f"FFT fitting time for observed data: {end_time - start_time} seconds")
 
                 observed_fft_coeffs = result_observed_data.coeffs
                 obs_fft_intercept = observed_fft_coeffs.intercept.detach().reshape(observed_fft_coeffs.intercept.shape[0], 1, observed_fft_coeffs.intercept.shape[1])
