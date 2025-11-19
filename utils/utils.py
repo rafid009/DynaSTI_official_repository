@@ -715,7 +715,7 @@ def calculate_mis(samples, y_true, alpha=0.1):
 
     # Mean across time and dimensions
     mis = interval_score.mean()
-    return mis
+    return mis.cpu().numpy()
 
 
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
@@ -1880,7 +1880,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
                 results_crps['pristi_trials'][trial] = pristi_crps_avg /  total_batch # (batch_size - trial_miss)
                 results_crps['pristi'] += pristi_crps_avg / total_batch # (batch_size - trial_miss)
 
-                results_trials_mis['pristi'][trial] = pristi_mis_avg / total_batch 
+                results_mis['pristi_trials'][trial] = pristi_mis_avg / total_batch 
                 results_mis['pristi'] += pristi_mis_avg / total_batch
 
             results_trials_mse['mean'][trial] = mean_avg_rmse /  total_batch # (batch_size - trial_miss)
@@ -2005,7 +2005,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
             pristi_trials = (z * np.std(pristi_trials)) / math.sqrt(len(pristi_trials))
             pristi_crps_ci = [results_crps['pristi_trials'][i] for i in results_crps['pristi_trials'].keys()]
             pristi_crps_ci = (z * np.std(pristi_crps_ci)) / math.sqrt(len(pristi_crps_ci))
-            pristi_mis_ci = [results_trials_mis['pristi'][i] for i in results_trials_mis['pristi'].keys()]
+            pristi_mis_ci = [results_mis['pristi_trials'][i] for i in results_mis['pristi_trials'].keys()]
             pristi_mis_ci = (z * np.std(pristi_mis_ci)) / math.sqrt(len(pristi_mis_ci))
 
         if 'SADI' in models.keys():
