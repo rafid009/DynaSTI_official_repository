@@ -192,6 +192,7 @@ model_pristi = DynaSTI_METRLA(config, device, n_spatial=n_spatial).to(device)
 filename = f"model_pristi_metrla.pth"
 print(f"\nDynaSTI training starts.....\n")
 
+model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 # train(
 #     model_pristi,
 #     config["train"],
@@ -221,8 +222,8 @@ coords_tensor, times_tensor, values_tensor, num_features = prepare_data(train_lo
 # dk_model = get_model(n_features)
 # dk_model.load_state_dict(torch.load(f"{model_folder}/deep_kriging.model"))
 models = {
-    # 'PriSTI': model_pristi,
-    'SPAT-SADI': model_diff_saits_fft,
+    'PriSTI': model_pristi,
+    # 'SPAT-SADI': model_diff_saits_fft,
     # 'DynaSTI-Orig': model_diff_saits,
     # 'IGNNK': model_ignnk,
     # 'GP': None,
