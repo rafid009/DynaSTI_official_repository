@@ -256,7 +256,7 @@ for i, test_batch in enumerate(test_loader):
     df_targets = pd.DataFrame(new_locations, columns=['longitude', 'latitude', 'elevation'])
 
     df_targets.to_csv(f'{folder}/{i}/random_locations.csv', index=False)
-
+    exit()
     decided_locations = []
     for k in range(N):
         print(f"Missing sensor {k+1}/{N} processing...")
