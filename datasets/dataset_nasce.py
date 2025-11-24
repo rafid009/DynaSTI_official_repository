@@ -262,7 +262,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -288,8 +288,10 @@ class NASCE_Dataset(Dataset):
         
         if is_test or is_valid:
             X_test = np.load(f"./data/nacse/X_OR_temps_test.npy")
-            
-            X_loc_test = np.load(f"./data/nacse/X_OR_temps_test_loc.npy")
+            if test_loc is not None:
+                X_loc_test = test_loc
+            else:
+                X_loc_test = np.load(f"./data/nacse/X_OR_temps_test_loc.npy")
             X = np.load("./data/nacse/X_OR_temps_test_train.npy")
 
         else:
@@ -615,13 +617,13 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None, test_loc=None):
     np.random.seed(seed=100)
     
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, parts=parts)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename, test_loc=test_loc)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
