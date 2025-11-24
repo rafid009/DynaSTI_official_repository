@@ -292,7 +292,7 @@ def sample_location(lat, lon, radius_m, fix_lat=False, direction="any"):
 N = 4
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 reference_coords = np.array([-121.68163, 45.34927])
-radius_m = 40000  # 20 km
+radius_m = 60000  # 20 km
 test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=True, direction="east")
 test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3)
 print(f"Test coords: {test_coords}")
