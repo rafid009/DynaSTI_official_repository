@@ -221,61 +221,81 @@ class NewLocationCoordsAndUncertainty:
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
 
-def sample_location(lat, lon, radius_m, fix_lat=False, direction="any"):
+def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction="any"):
     """
-    Sample one random location around (lat, lon) within a given radius.
-    
+    Sample a new location around (lat, lon) within a given radius, with options
+    to fix latitude or longitude and to force a sampling direction.
+
     Parameters
     ----------
-    lat : float
-        Center latitude in degrees.
-    lon : float
-        Center longitude in degrees.
+    lat, lon : float
+        Original coordinates in degrees.
     radius_m : float
-        Radius within which to sample, in meters.
+        Sampling radius in meters.
     fix_lat : bool
         If True, keep latitude fixed.
+    fix_lon : bool
+        If True, keep longitude fixed.
     direction : str
         One of {"north", "south", "east", "west", "any"}.
-        When set, the sampled point will be biased exactly in that direction.
-    
+
     Returns
     -------
-    (lat_new, lon_new) : tuple of floats
-        Sampled coordinate.
+    (lat_new, lon_new) : tuple
+        Sampled coordinates in degrees.
     """
 
     # Earth radius in meters
     R = 6371000
 
-    # Convert center to radians
+    # Convert to radians
     lat_rad = math.radians(lat)
     lon_rad = math.radians(lon)
 
-    # Sample a random distance within the radius
+    # Random distance within radius
     distance = random.random() * radius_m
 
-    # Determine angle based on direction
-    if direction == "north":
-        angle = math.pi / 2
-    elif direction == "south":
-        angle = 3 * math.pi / 2
-    elif direction == "east":
-        angle = 0
-    elif direction == "west":
-        angle = math.pi
-    else:  # "any"
+    # Map direction to angle
+    dir_map = {
+        "east": 0,
+        "north": math.pi / 2,
+        "west": math.pi,
+        "south": 3 * math.pi / 2
+    }
+
+    if direction in dir_map:
+        angle = dir_map[direction]
+    else:
         angle = random.random() * 2 * math.pi
 
-    # If latitude is fixed → shift only longitude
-    if fix_lat:
-        # East-West movement only
+    # -------------------------
+    # Case 1: Fix latitude only
+    # -------------------------
+    if fix_lat and not fix_lon:
         if direction in ["north", "south"]:
-            raise ValueError("fix_lat=True cannot be combined with north/south direction.")
-        lon_new = lon + math.degrees(distance * math.cos(angle) / (R * math.cos(lat_rad)))
+            raise ValueError("Cannot move north/south when fix_lat=True.")
+        lon_new = lon + math.degrees(distance * math.cos(angle) /
+                                     (R * math.cos(lat_rad)))
         return lat, lon_new
 
-    # Standard spherical sampling
+    # -------------------------
+    # Case 2: Fix longitude only
+    # -------------------------
+    if fix_lon and not fix_lat:
+        if direction in ["east", "west"]:
+            raise ValueError("Cannot move east/west when fix_lon=True.")
+        lat_new = lat + math.degrees(distance * math.sin(angle) / R)
+        return lat_new, lon
+
+    # -------------------------
+    # Case 3: Fixing both is invalid
+    # -------------------------
+    if fix_lat and fix_lon:
+        raise ValueError("Cannot fix both latitude and longitude.")
+
+    # -------------------------
+    # Case 4: Standard spherical sampling
+    # -------------------------
     lat_new = math.asin(
         math.sin(lat_rad) * math.cos(distance / R) +
         math.cos(lat_rad) * math.sin(distance / R) * math.sin(angle)
@@ -291,9 +311,9 @@ def sample_location(lat, lon, radius_m, fix_lat=False, direction="any"):
 
 N = 4
 M = 1 # Number of virtual sensors to evaluate uncertainty on
-reference_coords = np.array([-121.68163, 45.34927])
+reference_coords = np.array([-123.45, 44.5]) # np.array([-121.68163, 45.34927])
 radius_m = 80000  # 20 km
-test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=True, direction="east")
+test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=False, fix_lon=True, direction="North")
 test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3)
 print(f"Test coords: {test_coords}")
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords)
