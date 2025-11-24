@@ -45,9 +45,9 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
                                 break
                     index = np.array(index)
                 else:
-                    index = np.random.choice(X_test.reshape(L, -1, 2).shape[1], missing_dims, replace=False)
+                    index = np.random.choice(X_loc_test.shape[0], missing_dims, replace=False)
             else:
-                index = int(np.random.choice(X_test.reshape(L, -1, 2).shape[1], 1, replace=False))
+                index = int(np.random.choice(X_loc_test.shape[0], 1, replace=False))
 
         if is_subset:
             feature_idxs = np.random.choice(2, 1, replace=False)
