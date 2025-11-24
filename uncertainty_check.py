@@ -313,7 +313,7 @@ N = 4
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 reference_coords = np.array([-123.45, 44.5]) # np.array([-121.68163, 45.34927])
 radius_m = 40000  # 20 km
-test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=False, fix_lon=True, direction="North")
+test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=False, fix_lon=True, direction="north")
 test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3)
 print(f"Test coords: {test_coords}")
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords)
