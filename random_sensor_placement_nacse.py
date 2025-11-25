@@ -218,10 +218,15 @@ class NewLocationCoordsAndUncertainty:
     def __repr__(self):
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
-N = 4
-M = 5 # Number of virtual sensors to evaluate uncertainty on
+N = 3
+M = 4 # Number of virtual sensors to evaluate uncertainty on
+old = True
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False)
+test_coords = [[-123.3730556, 45.5447222, 991.0], [-123.5833333, 44.9166667, 1095.0], [-121.1333333, 45.45, 406.0], [-121.06508, 44.86472, 426.0]]
+
+print(f"Test coords: {test_coords}")
+exclude_train_coords = [[-123.2966667, 45.5258333, 610.0], [-122.95, 45.5333333, 61.0], [-121.15596, 45.57307, 144.0], [-121.06748, 44.87365, 402.0], [-121.0683, 44.86912, 391.0]]
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=exclude_train_coords, old=old)
 
   
 lr = 0.01
