@@ -232,7 +232,7 @@ train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_feat
 lr = 0.01
 total_points = 50
 iters = 10 #00
-folder = 'results_map_random_sparse'
+folder = 'results_map_random_sparse_mod'
 if not os.path.isdir(folder):
     os.makedirs(folder)
 
