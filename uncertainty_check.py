@@ -253,7 +253,7 @@ def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction=
     lon_rad = math.radians(lon)
 
     # Random distance within radius
-    distance = random.random() * radius_m
+    distance = radius_m # random.random() * radius_m
 
     # Map direction to angle
     dir_map = {
@@ -264,6 +264,7 @@ def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction=
     }
 
     if direction in dir_map:
+        # print(f"Sampling direction: {dir_map[direction]}")
         angle = dir_map[direction]
     else:
         angle = random.random() * 2 * math.pi
@@ -276,8 +277,8 @@ def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction=
             raise ValueError("Cannot move north/south when fix_lat=True.")
         lon_new = lon + math.degrees(distance * math.cos(angle) /
                                      (R * math.cos(lat_rad)))
-        print(f"rad: {math.degrees(distance * math.cos(angle) / (R * math.cos(lat_rad)))}")
-        print(f"lon_new: {lon_new}")
+        # print(f"rad: {math.degrees(distance * math.cos(angle) / (R * math.cos(lat_rad)))}")
+        # print(f"lon_new: {lon_new}")
         return lat, lon_new
 
     # -------------------------
