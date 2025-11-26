@@ -320,7 +320,7 @@ test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3
 
 print(f"Test coords: {test_coords}")
 # exclude_train_coords = [[-123.2966667, 45.5258333, 610.0], [-122.95, 45.5333333, 61.0], [-121.15596, 45.57307, 144.0], [-121.06748, 44.87365, 402.0], [-121.0683, 44.86912, 391.0]]
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=exclude_train_coords, old=old)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords)
 
 model_diff_saits.eval()
 with torch.no_grad():
