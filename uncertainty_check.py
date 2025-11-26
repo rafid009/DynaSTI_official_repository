@@ -276,8 +276,7 @@ def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction=
             raise ValueError("Cannot move north/south when fix_lat=True.")
         lon_new = lon + math.degrees(distance * math.cos(angle) /
                                      (R * math.cos(lat_rad)))
-        print(f"rad: {math.degrees(distance * math.cos(angle) /
-                                     (R * math.cos(lat_rad)))}")
+        print(f"rad: {math.degrees(distance * math.cos(angle) / (R * math.cos(lat_rad)))}")
         print(f"lon_new: {lon_new}")
         return lat, lon_new
 
