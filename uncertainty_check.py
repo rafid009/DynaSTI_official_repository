@@ -379,7 +379,7 @@ with torch.no_grad():
         B, T, L, D = samples.shape
         # print(f"sample temp: {samples_temp.shape}")
         print(f"Missing locations: {missing_locations.shape}, input locations: {input_locations.shape}")
-        inverse_distance = inverse_distance_sum(missing_locations[0][:2].numpy(), input_locations[0][:, :2].numpy())
+        inverse_distance = inverse_distance_sum(missing_locations[0][0, :2].numpy(), input_locations[0][:, :2].numpy())
         samples = samples.reshape(T, L, M, 2).permute(0, 2, 1, 3) # T, M, L, K
         uncertainty = compute_global_uncertainty_mean(samples)
 
