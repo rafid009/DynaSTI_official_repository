@@ -311,6 +311,48 @@ def sample_location(lat, lon, radius_m, fix_lat=False, fix_lon=False, direction=
 
     return math.degrees(lat_new), math.degrees(lon_new)
 
+def haversine(lat1, lon1, lat2, lon2):
+    """
+    Compute distance in meters between two lat/lon points.
+    """
+    R = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+
+    a = (math.sin(dphi/2)**2 +
+         math.cos(phi1) * math.cos(phi2) * math.sin(dlambda/2)**2)
+
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def inverse_distance_sum(point, stations, eps=1e-6):
+    """
+    Compute sum(1/distance) for a point to all input stations.
+    """
+    lat, lon = point
+    total = 0
+    for s_lat, s_lon in stations:
+        d = haversine(lat, lon, s_lat, s_lon)
+        total += 1.0 / max(d, eps)
+    return total
+
+
+def sample_new_point(center, radius_m):
+    """
+    Sample random point within a given radius.
+    """
+    lat0, lon0 = center
+    R = 6371000
+
+    dist = random.random() * radius_m
+    angle = random.random() * 2 * math.pi
+
+    lat_new = lat0 + (dist * math.sin(angle)) * 1.0 / R * 180 / math.pi
+    lon_new = lon0 + (dist * math.cos(angle)) * 1.0 / (R * math.cos(math.radians(lat0))) * 180 / math.pi
+
+    return lat_new, lon_new
+
 
 N = 4
 M = 1 # Number of virtual sensors to evaluate uncertainty on
@@ -323,18 +365,22 @@ test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3
 
 print(f"Test coords: {test_coords}")
 # exclude_train_coords = [[-123.2966667, 45.5258333, 610.0], [-122.95, 45.5333333, 61.0], [-121.15596, 45.57307, 144.0], [-121.06748, 44.87365, 402.0], [-121.0683, 44.86912, 391.0]]
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=1, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False)#, test_loc=test_coords)
 
 model_diff_saits.eval()
 with torch.no_grad():
     for i, test_batch in enumerate(test_loader):
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
         samples, _, _, _, _, _, _, _, _, _ = outputs
         samples = samples.permute(0, 1, 3, 2)
 
         B, T, L, D = samples.shape
         # print(f"sample temp: {samples_temp.shape}")
+        inverse_distance = inverse_distance_sum(missing_locations[0][:2].numpy(), input_locations[0][:, :2].numpy())
         samples = samples.reshape(T, L, M, 2).permute(0, 2, 1, 3) # T, M, L, K
         uncertainty = compute_global_uncertainty_mean(samples)
-        print(f"Uncertainty at test location {test_coords}: {uncertainty.item()}")
-        exit()
+
+        print(f"Uncertainty at test location {missing_locations}: {uncertainty.item()} and the inverse distance sum: {inverse_distance}\n")
+        # exit()
