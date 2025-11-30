@@ -250,8 +250,10 @@ class Diffusion_base(nn.Module):
                 locations[i, chosen_location, :] = 0
 
                 if self.spatial_choice is not None:
-                    print(f"locations chosen: {locations[i, chosen_location, :].shape}")
-                    new_locations = locations[i,:,:] - locations[i, chosen_location, :].unsqueeze(0)
+                    if self.is_multi:
+                        new_locations = locations[i,:,:] - locations[i, chosen_location, :]
+                    else:
+                        new_locations = locations[i,:,:] - locations[i, chosen_location, :].unsqueeze(0)
                     new_locations[i, chosen_location, :] = 0
                     locations[i,:,:] = new_locations
                 if not self.is_pristi and not self.is_multi:
