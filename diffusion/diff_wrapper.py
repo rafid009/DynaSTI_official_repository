@@ -254,7 +254,7 @@ class Diffusion_base(nn.Module):
                         new_locations = locations[i,:,:] - locations[i, chosen_location, :]
                     else:
                         new_locations = locations[i,:,:] - locations[i, chosen_location, :].unsqueeze(0)
-                    new_locations[i, chosen_location, :] = 0
+                    new_locations[chosen_location, :] = 0
                     locations[i,:,:] = new_locations
                 if not self.is_pristi and not self.is_multi:
                     cond_mask[i] = cond_mask[i, chosen_location, :, :].unsqueeze(0)
