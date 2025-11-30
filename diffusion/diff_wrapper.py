@@ -96,6 +96,7 @@ class Diffusion_base(nn.Module):
         self.is_multi = config['is_multi'] if 'is_multi' in config.keys() else False
         self.is_pristi = config['is_pristi'] if 'is_pristi' in config.keys() else False
         self.is_fft = config['fft'] if 'fft' in config else False
+        self.spatial_choice = config['spatial_choice'] if 'spatial_choice' in config else None
 
         if self.is_pristi:
             self.embed_layer = nn.Embedding(
@@ -247,7 +248,11 @@ class Diffusion_base(nn.Module):
                 cond_mask[i, chosen_location, :, :] = 0
 
                 locations[i, chosen_location, :] = 0
-                    
+
+                if self.spatial_choice is not None:
+                    new_locations = locations[i,:,:] - locations[i, chosen_location, :].unsqueeze(0)
+                    new_locations[i, chosen_location, :] = 0
+                    locations[i,:,:] = new_locations
                 if not self.is_pristi and not self.is_multi:
                     cond_mask[i] = cond_mask[i, chosen_location, :, :].unsqueeze(0)
 

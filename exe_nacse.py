@@ -77,7 +77,7 @@ except Exception as e:
 
 model_diff_saits = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
-filename = f"model_dynasti_nacse_sparse.pth"
+filename = f"model_dynasti_nacse_delta.pth"
 print(f"\nDynaSTI training starts.....\n")
 model_folder = 'saved_models_nacse'
 
@@ -87,27 +87,27 @@ model_folder = 'saved_models_nacse'
 if not os.path.isdir(model_folder):
     os.makedirs(model_folder)
 
-# train(
-#     model_diff_saits,
-#     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"nacse"
-# )
+train(
+    model_diff_saits,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"nacse_delta"
+)
 
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 # Create EMA handler with the main model
 ema = EMA(model_diff_saits)
 
 # Define the file path where the EMA model is saved
-ema_model_filepath = f"{model_folder}/ema_model_nacse.pth"
+ema_model_filepath = f"{model_folder}/ema_model_nacse_delta.pth"
 
 # Load the saved EMA model
 ema.load(ema_model_filepath)
