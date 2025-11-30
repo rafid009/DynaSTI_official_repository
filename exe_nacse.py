@@ -62,7 +62,7 @@ nsample = 50
 print("################### Start ###################")
  #352 #len(given_features)
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=5, is_multi=is_multi)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=-1, is_multi=is_multi)
 
 print(f"################### Data loading done ###################")
 
