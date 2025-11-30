@@ -33,7 +33,7 @@ class NumpyArrayEncoder(JSONEncoder):
 data = 'temps'
 is_neighbor = False
 is_separate = True
-is_multi = True
+is_multi = False
 n_steps = 30
 n_features = 2 if data == 'temps' else 775
 # 3 -> None, 6 -> add-delta, 3 -> sole-delta
