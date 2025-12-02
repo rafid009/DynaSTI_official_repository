@@ -15,6 +15,8 @@ from utils.ignnk_util import train_ignnk
 from models.ignnk import IGNNK
 import pandas as pd
 from tqdm import tqdm
+import math
+import random
 
 matplotlib.rc('xtick', labelsize=20) 
 matplotlib.rc('ytick', labelsize=20) 
@@ -217,6 +219,61 @@ class NewLocationCoordsAndUncertainty:
 
     def __repr__(self):
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
+
+
+def sample_point_in_annulus(lat, lon, r_min, r_max):
+    """
+    Sample a uniformly random point between radii r_min and r_max (meters)
+    around (lat, lon).
+    """
+    R = 6371000  # Earth radius
+
+    # Sample radius uniformly in area (important!)
+    r = math.sqrt(random.random() * (r_max**2 - r_min**2) + r_min**2)
+
+    # Random angle 0–2π
+    angle = random.random() * 2 * math.pi
+
+    # Convert to geodesic displacement
+    lat_rad = math.radians(lat)
+    lon_rad = math.radians(lon)
+
+    lat_new = math.asin(
+        math.sin(lat_rad) * math.cos(r / R) +
+        math.cos(lat_rad) * math.sin(r / R) * math.sin(angle)
+    )
+
+    lon_new = lon_rad + math.atan2(
+        math.cos(angle) * math.sin(r / R) * math.cos(lat_rad),
+        math.cos(r / R) - math.sin(lat_rad) * math.sin(lat_new)
+    )
+
+    return math.degrees(lat_new), math.degrees(lon_new)
+
+
+def sample_points_around_locations(
+    input_points,
+    radius_intervals,
+    P
+):
+    """
+    input_points     : list of (lat, lon)
+    radius_intervals : list of (r_min, r_max) in meters
+    P                : number of points to sample per interval per input point
+
+    Returns:
+        dict mapping each input point -> list of sampled points
+    """
+    results = {}
+
+    for (lat, lon) in input_points:
+        samples = []
+        for (r_min, r_max) in radius_intervals:
+            for _ in range(P):
+                samples.append(sample_point_in_annulus(lat, lon, r_min, r_max))
+        results[(lat, lon)] = samples
+
+    return results
 
 N = 3
 M = 4 # Number of virtual sensors to evaluate uncertainty on
