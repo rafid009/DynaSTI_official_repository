@@ -221,7 +221,7 @@ class NewLocationCoordsAndUncertainty:
         return f"Coords: {self.coords.numpy()}, Uncertainty: {self.uncertainty}"
 
 
-def sample_point_in_annulus(lat, lon, r_min, r_max):
+def sample_point_in_annulus(lat, lon, elev, r_min, r_max):
     """
     Sample a uniformly random point between radii r_min and r_max (meters)
     around (lat, lon).
@@ -248,7 +248,7 @@ def sample_point_in_annulus(lat, lon, r_min, r_max):
         math.cos(r / R) - math.sin(lat_rad) * math.sin(lat_new)
     )
 
-    return math.degrees(lat_new), math.degrees(lon_new)
+    return math.degrees(lat_new), math.degrees(lon_new), elev
 
 
 def sample_points_around_locations(
@@ -264,16 +264,17 @@ def sample_points_around_locations(
     Returns:
         dict mapping each input point -> list of sampled points
     """
-    results = {}
-
-    for (lat, lon) in input_points:
-        samples = []
+    # results = {}
+    samples = []
+    for (lat, lon, elev) in input_points:
+        
         for (r_min, r_max) in radius_intervals:
             for _ in range(P):
-                samples.append(sample_point_in_annulus(lat, lon, r_min, r_max))
-        results[(lat, lon)] = samples
+                sample = sample_point_in_annulus(lat, lon, elev, r_min, r_max)
+                samples.append(sample)
+        # results[(lat, lon, elev)] = samples
 
-    return results
+    return torch.tensor(samples, dtype=torch.float32)
 
 N = 3
 M = 4 # Number of virtual sensors to evaluate uncertainty on
