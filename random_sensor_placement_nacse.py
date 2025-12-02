@@ -248,7 +248,7 @@ def sample_point_in_annulus(lat, lon, elev, r_min, r_max):
         math.cos(r / R) - math.sin(lat_rad) * math.sin(lat_new)
     )
 
-    return math.degrees(lat_new), math.degrees(lon_new), elev
+    return math.degrees(lon_new), math.degrees(lat_new), elev
 
 
 def sample_points_around_locations(
@@ -266,7 +266,7 @@ def sample_points_around_locations(
     """
     # results = {}
     samples = []
-    for (lat, lon, elev) in input_points:
+    for (lon, lat, elev) in input_points:
         
         for (r_min, r_max) in radius_intervals:
             for _ in range(P):
