@@ -282,12 +282,12 @@ old = True
 test_coords = [[-123.3730556, 45.5447222, 991.0], [-123.5833333, 44.9166667, 1095.0], [-121.1333333, 45.45, 406.0], [-121.06508, 44.86472, 426.0]]
 
 print(f"Test coords: {test_coords}")
-exclude_train_coords = [[-123.2966667, 45.5258333, 610.0], [-122.95, 45.5333333, 61.0], [-121.15596, 45.57307, 144.0], [-121.06748, 44.87365, 402.0], [-121.0683, 44.86912, 391.0]]
+exclude_train_coords = [[-123.2966667, 45.5258333, 610.0], [-122.95, 45.5333333, 61.0], [-121.15596, 45.57307, 144.0], [-121.06748, 44.87365, 402.0], [-121.0683, 44.86912, 391.0], [-121.25, 44.7333333, 430.0], [-123.9333333, 45.0333333, 46.0], [-123.85, 45.4833333, 12.0], [-123.7619444, 45.4294444, 43.0]]
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=exclude_train_coords, old=old)
 
   
 lr = 0.01
-total_points = 50
+total_points = 100
 iters = 10 #00
 folder = 'results_map_random_sparse_mod'
 if not os.path.isdir(folder):
@@ -308,7 +308,8 @@ for i, test_batch in enumerate(test_loader):
         os.makedirs(f"{folder}/{i}")
 
     df_targets.to_csv(f'{folder}/{i}/target_locations.csv', index=False)
-    new_locations = generate_uniform_points_around_targets(missing_locations, total_points, expand_ratio=0.4)
+    radius_intervals = [(20000,100000) for i in range(M)]
+    new_locations = sample_points_around_locations(missing_locations, radius_intervals=radius_intervals, P=int(math.ceil(total_points/M))) # generate_uniform_points_around_targets(missing_locations, total_points, expand_ratio=0.4)
     # new_locations = torch.tensor(pd.read_csv(f'{folder}/{i}/decided_locations.csv').to_numpy(), dtype=torch.float32)
 
     df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
