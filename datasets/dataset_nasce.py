@@ -262,7 +262,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -337,6 +337,19 @@ class NASCE_Dataset(Dataset):
             X_loc = X_loc[include_indices, :]
             X = X[:, :, include_indices, :]
             print(f"Excluded {len(exclude_indices)} locations from training data.")
+        if radius_range is not None:
+            X = X.reshape(B, L, -1, n_features)
+            print(f"X before radius filter: {X.shape}")
+            include_indices = []
+            for i in range(X_loc.shape[0]):
+                dist = np.sqrt((X_loc[i,0]-test_loc[0])**2 + (X_loc[i,1]-test_loc[1])**2)
+                if dist >= radius_range[0] and dist <= radius_range[1]:
+                    include_indices.append(i)
+            X_ = X_[:, :, include_indices, :]
+            X_loc = X_loc[include_indices, :]
+            X = X[:, :, include_indices, :]
+            print(f"X after radius filter: {X.shape}")
+            print(f"Included {len(include_indices)} locations within radius range from training data.")
         # if self.is_separate:
         X = X.reshape(B, L, -1)
 
@@ -647,13 +660,13 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None):
     np.random.seed(seed=100)
     
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, parts=parts)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename, test_loc=test_loc, exclude_train_coords=exclude_train_coords, old=old)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename, test_loc=test_loc, exclude_train_coords=exclude_train_coords, old=old, radius_range=radius_range)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
