@@ -361,10 +361,120 @@ old = True
 
 test_coords = [[-121.06508, 44.86472, 426.0]]
 radius_range = (10000, 60000)  # 10 km to 60 km
+quantity = 11
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range)
+model_diff_saits.eval()
+with torch.no_grad():
+    total_batch = 0
+    avg_rmse = 0.0
+    for i, test_batch in enumerate(test_loader):
+        missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        sample_mean = samples.mean(dim=1)
+
+        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        avg_rmse += math.sqrt(rmse)
+        total_batch += 1
+    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
+
+
 
 
 radius_range = (60000, 110000)  # 60 km to 110 km
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
+
+with torch.no_grad():
+    total_batch = 0
+    avg_rmse = 0.0
+    for i, test_batch in enumerate(test_loader):
+        missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        sample_mean = samples.mean(dim=1)
+
+        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        avg_rmse += math.sqrt(rmse)
+        total_batch += 1
+    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
+
+radius_range = (110000, 160000)  # 110 km to 160 km
+
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
+
+with torch.no_grad():
+    total_batch = 0
+    avg_rmse = 0.0
+    for i, test_batch in enumerate(test_loader):
+        missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        sample_mean = samples.mean(dim=1)
+
+        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        avg_rmse += math.sqrt(rmse)
+        total_batch += 1
+    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
+
+radius_range = (160000, 210000)  # 160 km to 210 km
+
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
+
+with torch.no_grad():
+    total_batch = 0
+    avg_rmse = 0.0
+    for i, test_batch in enumerate(test_loader):
+        missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        sample_mean = samples.mean(dim=1)
+
+        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        avg_rmse += math.sqrt(rmse)
+        total_batch += 1
+    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
+
+radius_range = (210000, 260000)  # 210 km to 260 km
+
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
+
+with torch.no_grad():
+    total_batch = 0
+    avg_rmse = 0.0
+    for i, test_batch in enumerate(test_loader):
+        missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        input_locations = test_batch['spatial_info']
+        missing_locations = test_batch['missing_data_loc']
+        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples = samples.permute(0, 1, 3, 2)
+        sample_mean = samples.mean(dim=1)
+
+        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        avg_rmse += math.sqrt(rmse)
+        total_batch += 1
+    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
