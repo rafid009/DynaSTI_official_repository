@@ -364,7 +364,7 @@ class NASCE_Dataset(Dataset):
                     if quantity != -1 and count >= quantity:
                         break
                     include_indices.append(i)
-                count += 1
+                    count += 1
             X_ = X_[:, :, include_indices, :]
             X_loc = X_loc[include_indices, :]
             X = X[:, :, include_indices, :]
