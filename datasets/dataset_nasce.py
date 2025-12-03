@@ -342,7 +342,7 @@ class NASCE_Dataset(Dataset):
             print(f"X before radius filter: {X.shape}")
             include_indices = []
             for i in range(X_loc.shape[0]):
-                dist = np.sqrt((X_loc[i,0]-test_loc[0])**2 + (X_loc[i,1]-test_loc[1])**2)
+                dist = np.sqrt((X_loc[i,0]-test_loc[0, 0])**2 + (X_loc[i,1]-test_loc[0, 1])**2)
                 if dist >= radius_range[0] and dist <= radius_range[1]:
                     include_indices.append(i)
             X_ = X_[:, :, include_indices, :]
