@@ -261,6 +261,19 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
     else:
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, missing_locs, values, locations
 
+def haversine(lat1, lon1, lat2, lon2):
+    """
+    Compute haversine distance between two lat/lon points in meters.
+    """
+    R = 6371000  # Earth radius (m)
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+
+    a = (math.sin(dphi/2)**2 +
+         math.cos(phi1) * math.cos(phi2) * math.sin(dlon/2)**2)
+    return 2 * R * math.asin(math.sqrt(a))
+
 class NASCE_Dataset(Dataset):
     def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None) -> None:
         super().__init__()
@@ -344,7 +357,7 @@ class NASCE_Dataset(Dataset):
             # print(f"test loc: {test_loc.shape}")
             for i in range(X_loc.shape[0]):
 
-                dist = np.sqrt((X_loc[i,0]-test_loc[0][0])**2 + (X_loc[i,1]-test_loc[0][1])**2)
+                dist = haversine(X_loc[i,1], X_loc[i,0], test_loc[0][1], test_loc[0][0])
                 if dist >= radius_range[0] and dist <= radius_range[1]:
                     include_indices.append(i)
             X_ = X_[:, :, include_indices, :]
