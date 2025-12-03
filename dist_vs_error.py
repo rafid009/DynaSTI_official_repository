@@ -360,7 +360,7 @@ M = 1 # Number of virtual sensors to evaluate uncertainty on
 old = True
 
 test_coords = [[-121.06508, 44.86472, 426.0]]
-radius_range = (10000, 60000)  # 10 km to 60 km
+radius_range = (10000, 100000)  # 10 km to 60 km
 
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range)
 
