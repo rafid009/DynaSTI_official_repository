@@ -408,8 +408,8 @@ class NASCE_Dataset(Dataset):
             self.mean = np.load(f"{mean_std_file}_mean.npy")
             self.std = np.load(f"{mean_std_file}_std.npy")
             
-            self.max_diff = np.load(f"./data/nacse/max_difference.npy")
-            self.min_diff = np.load(f"./data/nacse/min_difference.npy")
+            self.max_diff = np.load(f"./data/nacse/max_diffrence.npy")
+            self.min_diff = np.load(f"./data/nacse/min_diffrence.npy")
 
             self.mean_loc = np.load(f"{mean_std_file}_mean_loc.npy")
             self.std_loc = np.load(f"{mean_std_file}_std_loc.npy")
@@ -438,8 +438,8 @@ class NASCE_Dataset(Dataset):
             self.mean_loc = np.mean(X_loc.reshape(-1, 3), axis=0)
             self.std_loc = np.std(X_loc.reshape(-1, 3), axis=0)
         
-            self.max_diff = np.load(f"./data/nacse/max_difference.npy")
-            self.min_diff = np.load(f"./data/nacse/min_difference.npy")
+            self.max_diff = np.load(f"./data/nacse/max_diffrence.npy")
+            self.min_diff = np.load(f"./data/nacse/min_diffrence.npy")
             # print(f"spatial los mean: {self.mean_loc} and std: {self.std_loc}")
             np.save(f"{mean_std_file}_max_loc.npy", self.max_loc)
             np.save(f"{mean_std_file}_min_loc.npy", self.min_loc)
