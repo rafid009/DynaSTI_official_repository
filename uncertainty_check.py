@@ -356,10 +356,10 @@ def sample_new_point(center, radius_m):
 
 N = 4
 M = 1 # Number of virtual sensors to evaluate uncertainty on
-reference_coords = np.array([-121.10017, 45.20803]) # np.array([-121.68163, 45.34927])
-radius_m = 100000  # 20 km
+reference_coords = np.array([-123.28, 44.5]) # np.array([-121.10017, 45.20803]) # np.array([-121.68163, 45.34927])
+radius_m = 20000  # 20 km
 old = True
-test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=True, fix_lon=False, direction="east")
+test_coords = sample_location(reference_coords[1], reference_coords[0], radius_m=radius_m, fix_lat=False, fix_lon=True, direction="south")
 test_coords = np.array([[test_coords[1], test_coords[0], 600.0]])  # Shape (1, 3)
 # test_coords = [[-123.3730556, 45.5447222, 991.0], [-123.5833333, 44.9166667, 1095.0], [-121.1333333, 45.45, 406.0], [-121.06508, 44.86472, 426.0]]
 
