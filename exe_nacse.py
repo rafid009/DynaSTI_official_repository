@@ -42,7 +42,7 @@ if is_neighbor:
 else:
     n_spatial = 143
 total_stations = 179
-spatial_choice = None # 'sole-delta'
+spatial_choice = "delta" # 'sole-delta'
 spatial_context_dim = 6 if spatial_choice == 'add-delta' else 3
 miss_type = 'random'
 seed = 400 # np.random.randint(10,100)
@@ -163,25 +163,25 @@ print(f"\nDynaSTI FFT training starts.....\n")
 
 
 ############################## PriSTI ##############################
-train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=is_multi, is_pristi=True)
-config['is_pristi'] = True
-config['is_dit_ca2'] = False
-config['is_separate'] = False
-config['adj_file'] = 'nacse'
-config['train_stations'] = 143
-config['model']['d_spatial'] = 179
-config['model']['use_guide'] = True
-config['model']['mask_sensor'] = []
-config['train']['lr'] = 1e-05
-config['train']['epochs'] = 1000
-config['model']['d_time'] = 30
-config['fft'] = False
-is_ema = False
-print(f"PriSTI config: {config}")
-model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
+# train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_multi=is_multi, is_pristi=True)
+# config['is_pristi'] = True
+# config['is_dit_ca2'] = False
+# config['is_separate'] = False
+# config['adj_file'] = 'nacse'
+# config['train_stations'] = 143
+# config['model']['d_spatial'] = 179
+# config['model']['use_guide'] = True
+# config['model']['mask_sensor'] = []
+# config['train']['lr'] = 1e-05
+# config['train']['epochs'] = 1000
+# config['model']['d_time'] = 30
+# config['fft'] = False
+# is_ema = False
+# print(f"PriSTI config: {config}")
+# model_pristi = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
-filename = f"model_pristi_nacse.pth"
-print(f"\nDynaSTI training starts.....\n")
+# filename = f"model_pristi_nacse.pth"
+# print(f"\nDynaSTI training starts.....\n")
 
 # train(
 #     model_pristi,
@@ -198,7 +198,7 @@ print(f"\nDynaSTI training starts.....\n")
 #     name=f"nacse"
 # )
 
-model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
+# model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 
 
 ########################## IGNNK ##############################
@@ -219,8 +219,8 @@ model_pristi.load_state_dict(torch.load(f"{model_folder}/{filename}"))
 # imputeFormer = ImputeFormer(()
 
 models = {
-    'DynaSTI-Orig': model_diff_saits,
-    # 'SPAT-SADI': model_diff_saits,
+    # 'DynaSTI-Orig': model_diff_saits,
+    'SPAT-SADI': model_diff_saits,
     # 'IGNNK': model_ignnk,
     # # 'GP': None,
     # 'DK': dk_model,
@@ -234,7 +234,7 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=-1, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
+evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=-1, latent_size=(latent_seq_dim, 2, n_iters, lr, random), deltas=(config['spatial_choice'] == 'delta'))
 # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=5, is_multi=is_multi, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
 
 # d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]

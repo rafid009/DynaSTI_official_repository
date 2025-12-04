@@ -97,6 +97,8 @@ class Diffusion_base(nn.Module):
         self.is_pristi = config['is_pristi'] if 'is_pristi' in config.keys() else False
         self.is_fft = config['fft'] if 'fft' in config else False
         self.spatial_choice = config['spatial_choice'] if 'spatial_choice' in config else None
+        if self.spatial_choice != 'delta':
+            self.spatial_choice = None
 
         if self.is_pristi:
             self.embed_layer = nn.Embedding(
@@ -943,21 +945,40 @@ class Diffusion_base(nn.Module):
             ) = self.process_data(batch)
         elif self.is_separate:
             if self.is_dit_ca2:
-                (
-                observed_data,
-                spatial_info,
-                observed_mask,
-                observed_tp,
-                gt_mask,
-                neighbor_location,
-                _,
-                _,
-                missing_data,
-                missing_data_mask,
-                missing_location,
-                mean_loc,
-                std_loc
-            ) = self.process_data(batch)
+                if self.spatial_choice is not None:
+                    (
+                        observed_data,
+                        spatial_info,
+                        observed_mask,
+                        observed_tp,
+                        gt_mask,
+                        neighbor_location,
+                        _,
+                        _,
+                        missing_data,
+                        missing_data_mask,
+                        missing_location,
+                        mean_loc,
+                        std_loc,
+                        max_diff,
+                        min_diff
+                    ) = self.process_data(batch)
+                else:
+                    (
+                    observed_data,
+                    spatial_info,
+                    observed_mask,
+                    observed_tp,
+                    gt_mask,
+                    neighbor_location,
+                    _,
+                    _,
+                    missing_data,
+                    missing_data_mask,
+                    missing_location,
+                    mean_loc,
+                    std_loc
+                ) = self.process_data(batch)
             else:
                 (
                     observed_data,
@@ -986,7 +1007,9 @@ class Diffusion_base(nn.Module):
                 _
             ) = self.process_data(batch)
         
-        
+        if not self.is_pristi and self.spatial_choice is None:
+            # print(f"In forward spatial info 1: {spatial_info.requires_grad}")
+            spatial_info = (spatial_info - mean_loc) / std_loc
         if is_train == 0:
             if not self.is_separate:
                 missing_data = None
@@ -1032,11 +1055,10 @@ class Diffusion_base(nn.Module):
             side_info = None
 
         loss_func = self.calc_loss if is_train == 1 else self.calc_loss_valid
-        # if self.is_separate:
-        #     missing_location = (missing_location - mean_loc) / std_loc
-        # if not self.is_pristi:
-        #     # print(f"In forward spatial info 1: {spatial_info.requires_grad}")
-        #     spatial_info = (spatial_info - mean_loc) / std_loc
+        if self.is_separate:
+            missing_location = (missing_location - mean_loc) / std_loc
+        if self.spatial_choice is not None and not self.is_pristi:
+            spatial_info = (spatial_info - min_diff) / (max_diff - min_diff)
             # print(f"In forward spatial info 2: {spatial_info.requires_grad}")
         if self.is_fft:
             B, N, K, L = observed_data.shape
@@ -1138,21 +1160,40 @@ class Diffusion_base(nn.Module):
             ) = self.process_data(batch)
         elif self.is_separate:
             if self.is_dit_ca2:
-                (
-                    observed_data,
-                    spatial_info,
-                    observed_mask,
-                    observed_tp,
-                    gt_mask,
-                    _,
-                    cut_length,
-                    gt_intact,
-                    missing_data,
-                    missing_data_mask,
-                    missing_location,
-                    mean_loc,
-                    std_loc
-                ) = self.process_data(batch)
+                if self.spatial_choice is not None:
+                    (
+                        observed_data,
+                        spatial_info,
+                        observed_mask,
+                        observed_tp,
+                        gt_mask,
+                        _,
+                        cut_length,
+                        gt_intact,
+                        missing_data,
+                        missing_data_mask,
+                        missing_location,
+                        mean_loc,
+                        std_loc,
+                        max_diff,
+                        min_diff
+                    ) = self.process_data(batch)
+                else:
+                    (
+                        observed_data,
+                        spatial_info,
+                        observed_mask,
+                        observed_tp,
+                        gt_mask,
+                        _,
+                        cut_length,
+                        gt_intact,
+                        missing_data,
+                        missing_data_mask,
+                        missing_location,
+                        mean_loc,
+                        std_loc
+                    ) = self.process_data(batch)
             else:
                 (
                     observed_data,
@@ -1206,17 +1247,20 @@ class Diffusion_base(nn.Module):
             if self.is_separate and self.spatial_choice is not None:
                 spatial_info = spatial_info - missing_location.unsqueeze(0)
 
-            # if self.is_separate:
-            #     # print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
-            #     # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
-            #     missing_location = (missing_location - mean_loc) / std_loc
-            #     # print(f"missing location 2: {missing_location.requires_grad}")
-            #     # max_loc: mean_loc
-            #     # min_loc: std_loc
-            #     # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
-            # if not self.is_pristi:
-            #     # print(f"spatial info 1: {spatial_info.requires_grad}")
-            #     spatial_info = (spatial_info - mean_loc) / std_loc
+            if self.is_separate:
+                # print(f"missing location 1: {missing_location.requires_grad}, mean: {mean_loc.requires_grad}, std: {std_loc.requires_grad}")
+                # print(f"missing loc: {missing_location.shape}, mean_loc: {mean_loc.shape}")
+                missing_location = (missing_location - mean_loc) / std_loc
+                # print(f"missing location 2: {missing_location.requires_grad}")
+                # max_loc: mean_loc
+                # min_loc: std_loc
+                # missing_location = -1 + (2 * (missing_location - std_loc) / (mean_loc - std_loc))
+            if not self.is_pristi:
+                # print(f"spatial info 1: {spatial_info.requires_grad}")
+                if self.spatial_choice is not None:
+                    spatial_info = (spatial_info - min_diff) / (max_diff - min_diff)
+                else:
+                    spatial_info = (spatial_info - mean_loc) / std_loc
                 # print(f"spatial info 2: {spatial_info.requires_grad}")
             
             B, N, K, L = observed_data.shape
@@ -1594,7 +1638,9 @@ class DynaSTI_NASCE(Diffusion_base):
             if missing_data_mask is not None:    
                 missing_data_mask = missing_data_mask.permute(0, 2, 3, 1)
                 # missing_data_loc = missing_data_loc.permute(0, 2, 3, 1)
-        
+        if self.spatial_choice is not None:
+            max_diff = batch['max_diff'].to(self.device).float()
+            min_diff = batch['min_diff'].to(self.device).float()
         observed_tp = batch["timepoints"].to(self.device).float()
         if batch["gt_intact"] is not None and not isinstance(batch["gt_intact"], list) and len(batch["gt_intact"]) != 0:
             gt_intact = batch["gt_intact"].to(self.device).float() #.cuda().float()
@@ -1646,23 +1692,42 @@ class DynaSTI_NASCE(Diffusion_base):
         #         )
         elif self.is_separate:
             if self.is_dit_ca2:
-                return (
-                    observed_data,
-                    spatial_info,
-                    observed_mask,
-                    observed_tp,
-                    gt_mask,
-                    None,
-                    cut_length,
-                    gt_intact,
-                    missing_data,
-                    missing_data_mask,
-                    missing_data_loc,
-                    mean_loc,
-                    std_loc
-                    # max_loc,
-                    # min_loc
-                )
+                if self.spatial_choice is not None:
+                    return (
+                        observed_data,
+                        spatial_info,
+                        observed_mask,
+                        observed_tp,
+                        gt_mask,
+                        None,
+                        cut_length,
+                        gt_intact,
+                        missing_data,
+                        missing_data_mask,
+                        missing_data_loc,
+                        mean_loc,
+                        std_loc,
+                        max_diff,
+                        min_diff
+                    )
+                else:
+                    return (
+                        observed_data,
+                        spatial_info,
+                        observed_mask,
+                        observed_tp,
+                        gt_mask,
+                        None,
+                        cut_length,
+                        gt_intact,
+                        missing_data,
+                        missing_data_mask,
+                        missing_data_loc,
+                        mean_loc,
+                        std_loc
+                        # max_loc,
+                        # min_loc
+                    )
             else:
                 return (
                     observed_data,

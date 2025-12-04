@@ -18,7 +18,7 @@ def dynamic_sensor_selection(X_train, X_loc, rate=0.5, L=30, K=2):
     return X_train, X_loc
 
 
-def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, target_location_file=None):
+def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=None, forward_trial=-1, lte_idx=None, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, X_test=None, X_loc_train=None, X_loc_test=None, X_pristi=None, is_separate=False, index=-1, is_dynamic=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, target_location_file=None, deltas=False):
     """Get mask of random points (missing at random) across channels based on k,
     where k == number of data points. Mask of sample's shape where 0's to be imputed, and 1's to preserved
     as per ts imputers"""
@@ -45,7 +45,7 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
                                 index.append(i)
                                 break
                     index = np.array(index)
-                else:
+                else: 
                     index = np.random.choice(X_loc_test.shape[0], missing_dims, replace=False)
             else:
                 index = int(np.random.choice(X_loc_test.shape[0], 1, replace=False))
@@ -60,7 +60,7 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
             obs_mask = ~np.isnan(sample)
         
         evals, values, evals_loc, evals_pristi, values_pristi, missing_data, missing_data_loc = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
-                                                          X_loc_test=X_loc_test, index=index, X_pristi=X_pristi)
+                                                          X_loc_test=X_loc_test, index=index, X_pristi=X_pristi, deltas=deltas)
 
         missing_data_mask = ~np.isnan(missing_data)
         if feature_idxs is None:
@@ -162,7 +162,7 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
         X_test_loc = X_test_loc.reshape(-1)
     return X_test, X_test_values, X_test_loc
 
-def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pristi):
+def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pristi, deltas=False):
     # print(f"X_train: {X_train.shape}")
     X_train = X_train.reshape(X_train.shape[0], -1, 2)
     if isinstance(index, int): 
@@ -178,7 +178,8 @@ def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pri
         X_loc_test_missing = X_loc_test[index,:]
     
     values = X_train.copy()
-
+    if deltas:
+        X_loc_train = X_loc_train - X_loc_test_missing
 
     values_pristi = X_pristi.copy()
     values_pristi[:, X_train.shape[1] - 1 + index, :] = np.nan
@@ -276,7 +277,7 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 class NASCE_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None, quantity=-1) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_pristi=False, southeast=False, sparse=False, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None, quantity=-1, deltas=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -297,7 +298,7 @@ class NASCE_Dataset(Dataset):
         self.is_test = is_test or is_valid
         self.is_valid = is_valid
         self.is_pristi = is_pristi
-
+        self.deltas = deltas
 
         
         if is_test or is_valid:
@@ -402,9 +403,14 @@ class NASCE_Dataset(Dataset):
         X_new = np.transpose(X_new, [3, 0, 1, 2])
         X_new = X_new.reshape(X_new.shape[0], -1)
 
+        
         if is_test or is_valid:
             self.mean = np.load(f"{mean_std_file}_mean.npy")
             self.std = np.load(f"{mean_std_file}_std.npy")
+            
+            self.max_diff = np.load(f"./data/nacse/max_difference.npy")
+            self.min_diff = np.load(f"./data/nacse/min_difference.npy")
+
             self.mean_loc = np.load(f"{mean_std_file}_mean_loc.npy")
             self.std_loc = np.load(f"{mean_std_file}_std_loc.npy")
             self.max_loc = np.load(f"{mean_std_file}_max_loc.npy")
@@ -428,8 +434,12 @@ class NASCE_Dataset(Dataset):
             # print(f"X_loc reshape: {X_loc.reshape(B, L, -1, 3)[0,0,:,:]}")
             self.max_loc = np.max(X_loc.reshape(-1, 3), axis=0)
             self.min_loc = np.min(X_loc.reshape(-1, 3), axis=0)
+            
             self.mean_loc = np.mean(X_loc.reshape(-1, 3), axis=0)
             self.std_loc = np.std(X_loc.reshape(-1, 3), axis=0)
+        
+            self.max_diff = np.load(f"./data/nacse/max_difference.npy")
+            self.min_diff = np.load(f"./data/nacse/min_difference.npy")
             # print(f"spatial los mean: {self.mean_loc} and std: {self.std_loc}")
             np.save(f"{mean_std_file}_max_loc.npy", self.max_loc)
             np.save(f"{mean_std_file}_min_loc.npy", self.min_loc)
@@ -451,7 +461,7 @@ class NASCE_Dataset(Dataset):
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test[i], \
                                                                                         X_loc_train=X_loc,\
-                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], index=j)
+                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], index=j, deltas=deltas)
                             if (is_test or is_valid) and missing_data_mask.sum() == 0:
                                 continue
                             self.observed_values.append(obs_val)
@@ -534,14 +544,14 @@ class NASCE_Dataset(Dataset):
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test_part, \
                                                                                         X_loc_train=X_loc_part,\
-                                                                                        X_loc_test=X_loc_test_part, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
+                                                                                        X_loc_test=X_loc_test_part, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, deltas=deltas)
                             else:
                                 obs_val, obs_mask, mask, X_loc_temp, obs_val_pristi, mask_pristi, obs_mask_pristi, values, missing_data, missing_data_mask, missing_data_loc = parse_data(X[i], rate, is_test, length, include_features=include_features, \
                                                                             forward_trial=forward_trial, random_trial=random_trial, \
                                                                                 pattern=pattern, partial_bm_config=partial_bm_config, \
                                                                                     spatial=spatial, X_test=X_test[i], \
                                                                                         X_loc_train=X_loc,\
-                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, target_location_file=target_loc_filename)
+                                                                                        X_loc_test=X_loc_test, X_pristi=X_pristi[i], is_dynamic=is_dynamic, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, target_location_file=target_loc_filename, deltas=deltas)
                         if (is_test or is_valid) and missing_data_mask is not None and missing_data_mask.sum() == 0:
                             continue
                         self.observed_values.append(obs_val)
@@ -658,6 +668,9 @@ class NASCE_Dataset(Dataset):
             # "observed_mask_pristi": self.observed_masks_pristi[index].reshape(self.observed_masks_pristi[index].shape[0], -1, 2)
             # "total_loc": self.total_loc.to(torch.float32)
         }
+        if self.deltas:
+            s["max_diff"] = np.expand_dims(self.max_diff, axis=0)
+            s["min_diff"] = np.expand_dims(self.min_diff, axis=0)
         if self.is_test or self.is_valid:
             if len(self.observed_values_pristi) != 0:
                 s["observed_data_pristi"] = self.observed_values_pristi[index].reshape(self.observed_values_pristi[index].shape[0], -1, 2)
@@ -680,13 +693,13 @@ class NASCE_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None, quantity=-1):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, type='year', data='temps', simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, is_multi=False, is_pristi=False, southeast=False, sparse=False, missing_dims=-1, parts=False, target_loc_filename=None, test_loc=None, exclude_train_coords=None, old=False, radius_range=None, quantity=-1, deltas=False):
     np.random.seed(seed=100)
     
     train_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, parts=parts)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename, test_loc=test_loc, exclude_train_coords=exclude_train_coords, old=old, radius_range=radius_range, quantity=quantity)
+    test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_pristi=is_pristi, southeast=southeast, sparse=sparse, missing_dims=missing_dims, parts=parts, target_loc_filename=target_loc_filename, test_loc=test_loc, exclude_train_coords=exclude_train_coords, old=old, radius_range=radius_range, quantity=quantity, deltas=deltas)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
@@ -696,12 +709,12 @@ def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, mis
     return train_loader, test_loader
 
 
-def get_testloader_nasce(total_stations, mean_std_file, n_features, n_steps=366, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1):
+def get_testloader_nasce(total_stations, mean_std_file, n_features, n_steps=366, batch_size=16, missing_ratio=0.2, seed=10, length=100, forecasting=False, random_trial=False, pattern=None, partial_bm_config=None, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, deltas=False):
     np.random.seed(seed=seed)
     if forecasting:
         forward = n_steps - length
         test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, forward_trial=forward, pattern=pattern, partial_bm_config=partial_bm_config)
     else:
-        test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims)
+        test_dataset = NASCE_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, is_test=True, length=length, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, deltas=deltas)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
     return test_loader
