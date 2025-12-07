@@ -386,7 +386,7 @@ with torch.no_grad():
         sample_mean = samples.mean(dim=1)
 
         spatial_positions = test_batch['spatial_info'].squeeze(0)
-
+        attn_mean = attn_mean.squeeze(0).cpu().numpy()
         df_array = np.concatenate([spatial_positions, attn_mean], axis=1)
         df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
         df_spat_attn.to_csv(f"{folder}/attn_map.csv")
