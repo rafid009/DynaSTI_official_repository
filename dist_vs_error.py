@@ -359,10 +359,10 @@ N = 3
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 old = True
 
-test_coords = [[-123.5833333, 44.9166667 ,1095.0]]# [[-121.1333333, 44.6333333, 702.0]] # [[-122.5063889, 45.1783333, 197.0]]  # [[-121.06508, 44.86472, 426.0]]
+test_coords = [[-123.5833333, 44.9166667, 1095.0]]# [[-121.1333333, 44.6333333, 702.0]] # [[-122.5063889, 45.1783333, 197.0]]  # [[-121.06508, 44.86472, 426.0]]
 radius_range = (10000, 60000)  # 10 km to 60 km
 quantity = 11
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old, radius_range=radius_range, quantity=quantity)
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old) #, radius_range=radius_range, quantity=quantity)
 
 model_diff_saits.eval()
 folder = "input_locations_distance"
@@ -381,17 +381,24 @@ with torch.no_grad():
         input_locations = test_batch['spatial_info']
         missing_locations = test_batch['missing_data_loc']
         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
-        samples, _, _, _, _, _, _, _, _, _ = outputs
+        samples, _, _, _, _, _, _, _, attn_mean, attn_std = outputs
         samples = samples.permute(0, 1, 3, 2)
         sample_mean = samples.mean(dim=1)
+
+        spatial_positions = test_batch['spatial_info'].squeeze(0)
+
+        df_array = np.concatenate([spatial_positions, attn_mean], axis=1)
+        df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
+        df_spat_attn.to_csv(f"{folder}/attn_map.csv")
 
         rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
         rmse = rmse.sum().item() / missing_data_mask.sum().item()
         avg_rmse += math.sqrt(rmse)
         total_batch += 1
+        break
     print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
 
-
+exit()
 
 
 radius_range = (60000, 110000)  # 60 km to 110 km
