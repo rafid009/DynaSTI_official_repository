@@ -384,7 +384,7 @@ with torch.no_grad():
         samples, _, _, _, _, _, _, _, attn_mean, attn_std = outputs
         samples = samples.permute(0, 1, 3, 2)
         sample_mean = samples.mean(dim=1)
-
+        print(f"attn_mean shape: {attn_mean.shape}, spatial_info shape: {test_batch['spatial_info'].shape}")
         spatial_positions = test_batch['spatial_info'].squeeze(0)
         attn_mean = attn_mean.squeeze(0).cpu().numpy()
         df_array = np.concatenate([spatial_positions, attn_mean], axis=1)
