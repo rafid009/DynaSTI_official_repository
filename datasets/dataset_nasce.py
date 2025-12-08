@@ -321,7 +321,7 @@ class NASCE_Dataset(Dataset):
             else:
                 X_test = np.load(f"./data/nacse/X_OR_temps_test.npy")
                 if test_loc is not None:
-                    X_loc_test = test_loc
+                    X_loc_test = np.array(test_loc)
                 else:
                     X_loc_test = np.load(f"./data/nacse/X_OR_temps_test_loc.npy")
             X = np.load("./data/nacse/X_OR_temps_test_train.npy")
