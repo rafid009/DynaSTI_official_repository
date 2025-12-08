@@ -357,9 +357,9 @@ def sample_new_point(center, radius_m):
 
 N = 3
 M = 1 # Number of virtual sensors to evaluate uncertainty on
-old = True
+old = False # True
 
-test_coords = [[-122.5063889, 45.1783333, 197.0]] # [[-123.5833333, 44.9166667, 1095.0]]# [[-121.1333333, 44.6333333, 702.0]] #   # [[-121.06508, 44.86472, 426.0]]
+test_coords = [[-122.4063889, 45.1783333, 197.0]] # [[-123.5833333, 44.9166667, 1095.0]]# [[-121.1333333, 44.6333333, 702.0]] #   # [[-121.06508, 44.86472, 426.0]]
 radius_range = (10000, 60000)  # 10 km to 60 km
 quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old) #, radius_range=radius_range, quantity=quantity)
@@ -377,7 +377,7 @@ with torch.no_grad():
             df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
             df_inputs.to_csv(f'{folder}/input_locations_10_60.csv', index=False)
         missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
-        missing_data = test_batch['missing_data'].squeeze(2).to(device)
+        missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
         missing_locations = test_batch['missing_data_loc']
         outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
