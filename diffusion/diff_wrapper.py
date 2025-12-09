@@ -1006,13 +1006,10 @@ class Diffusion_base(nn.Module):
                 _,
                 _
             ) = self.process_data(batch)
-        if not self.is_pristi:
-            if self.spatial_choice is not None:
-                spatial_info = (spatial_info - min_diff) / (max_diff - min_diff)
-            else:
-                # print(f"In forward spatial info 1: {spatial_info.requires_grad}")
-                spatial_info = (spatial_info - mean_loc) / std_loc
         
+        if not self.is_pristi and self.spatial_choice is None:
+            # print(f"In forward spatial info 1: {spatial_info.requires_grad}")
+            spatial_info = (spatial_info - mean_loc) / std_loc
         if is_train == 0:
             if not self.is_separate:
                 missing_data = None
@@ -1060,7 +1057,8 @@ class Diffusion_base(nn.Module):
         loss_func = self.calc_loss if is_train == 1 else self.calc_loss_valid
         if self.is_separate:
             missing_location = (missing_location - mean_loc) / std_loc
-        
+        if self.spatial_choice is not None and not self.is_pristi:
+            spatial_info = (spatial_info - min_diff) / (max_diff - min_diff)
             # print(f"In forward spatial info 2: {spatial_info.requires_grad}")
         if self.is_fft:
             B, N, K, L = observed_data.shape
