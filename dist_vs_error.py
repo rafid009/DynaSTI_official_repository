@@ -376,6 +376,7 @@ with torch.no_grad():
             input_locations = test_batch['spatial_info'][0]
             df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
             df_inputs.to_csv(f'{folder}/input_locations_10_60.csv', index=False)
+            continue
         missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
         missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
