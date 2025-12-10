@@ -1449,7 +1449,7 @@ class DynaSTI(nn.Module):
         
         spatial_input = spatial_info
         # print(f"X_input: {X_input.requires_grad}, X_target: {X_target.requires_grad}, masks: {masks.requires_grad}, spatial_info: {spatial_info.requires_grad}, missing_location: {missing_location.requires_grad}")
-
+        print(f"spatial input: {spatial_input.device}")
         spatial_embed = F.leaky_relu(self.spatial_context_embeddimg(spatial_input)) # B, N, 128
         missing_location_embed = F.leaky_relu(self.missing_spatial_context_embedding(missing_location)) # B, 1, 128
         # print(f"missing location embed: {missing_location_embed.shape}")

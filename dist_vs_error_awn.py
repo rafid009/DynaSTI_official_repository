@@ -148,7 +148,7 @@ n_iters = 100
 lr = 0.01
 random = False
 
-model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(device)
+model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial).to(device)
 
 filename = f"model_dynasti_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
 print(f"\nDynaSTI FFT training starts.....\n")
@@ -268,7 +268,7 @@ with torch.no_grad():
             input_locations = test_batch['spatial_info'][0]
             df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
             df_inputs.to_csv(f'{folder}/input_locations_10_60.csv', index=False)
-            continue
+
         missing_data_mask = test_batch['missing_data_mask'].squeeze(2).to(device)
         missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
