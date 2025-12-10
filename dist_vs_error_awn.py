@@ -272,7 +272,7 @@ with torch.no_grad():
         missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
         missing_locations = test_batch['missing_data_loc']
-        outputs = model_diff_saits_fft.evaluate(test_batch, nsample, missing_dims=M, latent_seq_dim=(latent_seq_dim, len(given_features), n_iters, lr, random))
+        outputs = model_diff_saits_fft.evaluate(test_batch, nsample, missing_dims=M, latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random))
         samples, _, _, _, _, _, _, _, attn_mean, attn_std = outputs
         samples = samples.permute(0, 1, 3, 2)
         sample_mean = samples.mean(dim=1)
