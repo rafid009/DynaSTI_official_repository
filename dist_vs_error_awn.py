@@ -283,11 +283,11 @@ with torch.no_grad():
         df_spat_attn = pd.DataFrame(df_array, columns=['longitude', 'latitude', 'elevation', 'attn'])
         df_spat_attn.to_csv(f"{folder}/attn_map.csv")
 
-        rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
-        rmse = rmse.sum().item() / missing_data_mask.sum().item()
-        avg_rmse += math.sqrt(rmse)
-        total_batch += 1
+        # rmse = ((sample_mean - missing_data) * missing_data_mask) ** 2
+        # rmse = rmse.sum().item() / missing_data_mask.sum().item()
+        # avg_rmse += math.sqrt(rmse)
+        # total_batch += 1
         break
-    print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
+    # print(f"Radius range: {radius_range}, Test RMSE: {avg_rmse/total_batch}")
 
 exit()
