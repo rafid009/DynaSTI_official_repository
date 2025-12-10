@@ -148,7 +148,7 @@ n_iters = 100
 lr = 0.01
 random = False
 
-model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial).to(device)
+model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(device)
 
 filename = f"model_dynasti_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
 print(f"\nDynaSTI FFT training starts.....\n")
@@ -256,7 +256,7 @@ radius_range = (10000, 60000)  # 10 km to 60 km
 quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, is_separate=is_separate, is_test=True, test_loc=test_coords, old=old) #, radius_range=radius_range, quantity=quantity)
 
-model_diff_saits.eval()
+model_diff_saits_fft.eval()
 folder = "awn_attn_map_center"
 if not os.path.isdir(folder):
     os.makedirs(folder)
@@ -273,7 +273,7 @@ with torch.no_grad():
         missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
         missing_locations = test_batch['missing_data_loc']
-        outputs = model_diff_saits.evaluate(test_batch, nsample, missing_dims=M)
+        outputs = model_diff_saits_fft.evaluate(test_batch, nsample, missing_dims=M)
         samples, _, _, _, _, _, _, _, attn_mean, attn_std = outputs
         samples = samples.permute(0, 1, 3, 2)
         sample_mean = samples.mean(dim=1)
