@@ -31,5 +31,6 @@ class EMA(object):
 
     def load(self, filepath):
         # Load the EMA model state_dict from a file
+        # print(f"ema model device: {self._get_device()}")
         self.ema_model.load_state_dict(torch.load(filepath, map_location=self._get_device()))
-        print(f"ema model device: {self._get_device()}")
+        

@@ -176,7 +176,7 @@ ema_model_filepath = f"{model_folder}/ema_model_fft_awn{'_no_se' if no_se else '
 
 # Load the saved EMA model
 ema.load(ema_model_filepath)
-model_diff_saits_fft = ema.ema_model
+model_diff_saits_fft = ema.ema_model.to(device)
 
 ############################## PriSTI ##############################
 # train_loader_pristi, test_loader_pristi = get_dataloader(total_stations, mean_std_file, n_features, batch_size=2, missing_ratio=0.02, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=False, is_pristi=True, zone=zone)
