@@ -251,8 +251,7 @@ N = 3
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 old = False # True
 
-test_coords = [[-119.24564,46.38186,830.0]] # [[-123.6833333, 44.9166667, 1095.0]] # [[-123.5833333, 44.9166667, 1095.0]] #[[-122.5063889, 45.1783333, 197.0]] # # [[-121.1333333, 44.6333333, 702.0]] #   # [[-121.06508, 44.86472, 426.0]]
-radius_range = (10000, 60000)  # 10 km to 60 km
+test_coords = [[-119.24564,46.38186,830.0]] 
 quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, is_separate=is_separate, is_test=True, test_loc=test_coords, old=old) #, radius_range=radius_range, quantity=quantity)
 
@@ -273,7 +272,7 @@ with torch.no_grad():
         missing_data = test_batch['missing_data'].squeeze(2).to(device) if test_batch['missing_data'] is not None else None
         input_locations = test_batch['spatial_info']
         missing_locations = test_batch['missing_data_loc']
-        outputs = model_diff_saits_fft.evaluate(test_batch, nsample, missing_dims=M)
+        outputs = model_diff_saits_fft.evaluate(test_batch, nsample, missing_dims=M, latent_seq_dim=(latent_seq_dim, len(given_features), n_iters, lr, random))
         samples, _, _, _, _, _, _, _, attn_mean, attn_std = outputs
         samples = samples.permute(0, 1, 3, 2)
         sample_mean = samples.mean(dim=1)
