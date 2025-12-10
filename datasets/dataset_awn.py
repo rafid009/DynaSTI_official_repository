@@ -249,7 +249,7 @@ def parse_data_spatial(sample, X_loc, X_test_loc, neighbor_location, spatial_cho
         return evals, obs_mask, mask, evals_loc, evals_pristi, mask_pristi, obs_mask_pristi, X_test_loc[chosen_location], values
 
 class AWN_Dataset(Dataset):
-    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, spatial_slider=False, dynamic_rate=-1, is_subset=False, is_pristi=False) -> None:
+    def __init__(self, total_stations, mean_std_file, n_features, rate=0.1, is_test=False, length=100, seed=10, forward_trial=-1, random_trial=False, pattern=None, partial_bm_config=None, is_valid=False, spatial=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, spatial_slider=False, dynamic_rate=-1, is_subset=False, is_pristi=False, test_loc=None, old=False) -> None:
         super().__init__()
         
         self.observed_values = []
@@ -272,6 +272,7 @@ class AWN_Dataset(Dataset):
 
         if is_neighbor:
             if is_test or is_valid:
+                
                 X = np.load(f"./data/awn/zone_{zone}_X_test.npy")
                 self.neighbor_location = "./data/nacse/neighbors.json"
                 X_loc_test = np.load(f"./data/nacse/X_OR_temps_test_loc.npy")
@@ -386,9 +387,30 @@ class AWN_Dataset(Dataset):
             self.gt_intact = torch.tensor(np.array(self.gt_intact), dtype=torch.float32)
         else:
             if is_test or is_valid:
-                X_test = np.load(f"./data/awn/zone_{zone}_X_test.npy")
-                print(f"X_test init: {X_test.shape}")
-                X_loc_test = np.load(f"./data/awn/zone_{zone}_test_locs.npy")
+                if old:
+                    X_test = np.load(f"./data/awn/zone_{zone}_X_test.npy")
+                    X_loc_test = np.load(f"./data/awn/zone_{zone}_test_locs.npy")
+                    indices = []
+                    index = 0
+                    for loc in X_loc_test:
+                        for loc_x in test_loc:
+                            if loc[0] == loc_x[0] and loc[1] == loc_x[1] and loc[2] == loc_x[2]:
+                                indices.append(index)
+                                break
+                        index += 1
+                    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], -1, 2)
+                    X_test = X_test[:, :, indices, :]
+                    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], -1)
+                    X_loc_test = X_loc_test[indices, :] 
+                        
+                else:
+                    X_test = np.load(f"./data/awn/zone_{zone}_X_test.npy")
+                    if test_loc is not None:
+                        X_loc_test = np.array(test_loc)
+                    else:
+                        X_loc_test = np.load(f"./data/awn/zone_{zone}_test_locs.npy")
+  
+                
                 X = np.load(f"./data/awn/zone_{zone}_X_train_test.npy")
                 if zone == 8:
                     X_test = X_test[:int(len(X_test) * 0.3)]
@@ -582,11 +604,11 @@ class AWN_Dataset(Dataset):
         return len(self.observed_values)
 
 
-def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, is_pristi=False):
+def get_dataloader(total_stations, mean_std_file, n_features, batch_size=16, missing_ratio=0.2, is_test=False, simple=False, is_neighbor=False, spatial_choice=None, is_separate=False, zone=8, is_pristi=False, test_loc=None, old=False):
     train_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=0.0001, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_pristi=is_pristi)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_pristi=is_pristi)
+    test_dataset = AWN_Dataset(total_stations, mean_std_file, n_features, rate=missing_ratio, pattern=None, is_valid=True, spatial=True, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, is_pristi=is_pristi, test_loc=test_loc, old=old)
     
     if is_test:
         test_loader = DataLoader(test_dataset, batch_size=1)
