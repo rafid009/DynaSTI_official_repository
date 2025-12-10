@@ -264,7 +264,7 @@ with torch.no_grad():
     total_batch = 0
     avg_rmse = 0.0
     for i, test_batch in enumerate(test_loader):
-        if i <= 7: #== 0:
+        if i == 0:
             input_locations = test_batch['spatial_info'][0]
             df_inputs = pd.DataFrame(input_locations, columns=['longitude', 'latitude', 'elevation'])
             df_inputs.to_csv(f'{folder}/input_locations_10_60.csv', index=False)
