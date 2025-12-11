@@ -251,7 +251,7 @@ N = 3
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 old = False # True
 
-test_coords = [[-119.49226, 47.06798, 1220.0]] # [[-120.244162, 45.7358528, 400]] # [[-119.24564,46.38186,830.0]] 
+test_coords = [[-118.399843, 46.027534, 738]] # [[-119.49226, 47.06798, 1220.0]] # [[-120.244162, 45.7358528, 400]] # [[-119.24564,46.38186,830.0]] 
 quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, is_separate=is_separate, is_test=True, test_loc=test_coords, old=old) #, radius_range=radius_range, quantity=quantity)
 
