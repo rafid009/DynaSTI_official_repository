@@ -256,7 +256,7 @@ quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, is_separate=is_separate, is_test=True, test_loc=test_coords, old=old) #, radius_range=radius_range, quantity=quantity)
 
 model_diff_saits_fft.eval()
-folder = "awn_attn_map_center"
+folder = "awn_attn_map_left"
 if not os.path.isdir(folder):
     os.makedirs(folder)
 with torch.no_grad():
