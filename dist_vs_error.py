@@ -359,13 +359,13 @@ N = 3
 M = 1 # Number of virtual sensors to evaluate uncertainty on
 old = False # True
 
-test_coords = [[-122.4063889,45.1783333,197.0]] # [[-123.6833333, 44.9166667, 1095.0]] # [[-123.5833333, 44.9166667, 1095.0]] #[[-122.5063889, 45.1783333, 197.0]] # # [[-121.1333333, 44.6333333, 702.0]] #   # [[-121.06508, 44.86472, 426.0]]
+test_coords = [[-121.1333333, 45.45, 406.0]] # [[-123.6833333, 44.9166667, 1095.0]] # [[-123.5833333, 44.9166667, 1095.0]] #[[-122.5063889, 45.1783333, 197.0]] # # [[-121.1333333, 44.6333333, 702.0]] #   # [[-121.06508, 44.86472, 426.0]]
 radius_range = (10000, 60000)  # 10 km to 60 km
 quantity = 11
 train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, is_multi=is_multi, is_test=True, southeast=False, sparse=False, missing_dims=M, parts=False, test_loc=test_coords, exclude_train_coords=None, old=old) #, radius_range=radius_range, quantity=quantity)
 
 model_diff_saits.eval()
-folder = "input_locations_distance_1_1"
+folder = "input_locations_distance_left_1"
 if not os.path.isdir(folder):
     os.makedirs(folder)
 with torch.no_grad():
