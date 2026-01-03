@@ -67,7 +67,8 @@ def parse_data(sample, rate=0.2, is_test=False, length=100, include_features=Non
             test_train_indices = None
         evals, values, evals_loc, evals_pristi, values_pristi, missing_data, missing_data_loc = get_test_data_spatial(X_train=sample, X_test=X_test, X_loc_train=X_loc_train,
                                                           X_loc_test=X_loc_test, index=index, X_pristi=X_pristi, deltas=deltas, test_train_indices=test_train_indices)
-
+        if parts:
+            obs_mask = ~np.isnan(evals)
         missing_data_mask = ~np.isnan(missing_data)
         if feature_idxs is None:
             mask = np.zeros_like(missing_data)
