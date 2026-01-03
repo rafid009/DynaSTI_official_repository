@@ -42,14 +42,14 @@ if is_neighbor:
 else:
     n_spatial = 143
 total_stations = 179
-spatial_choice = "delta" # 'sole-delta'
+spatial_choice = "" # 'sole-delta'
 spatial_context_dim = 6 if spatial_choice == 'add-delta' else 3
 miss_type = 'random'
 seed = 400 # np.random.randint(10,100)
 simple = False
 
 is_ema = True
-
+parts = True
 # filename: Any, is_year: bool = True, n_steps: int = 366
 data_type = 'year'
 dataset_name = 'nasce'
@@ -62,7 +62,7 @@ nsample = 50
 print("################### Start ###################")
  #352 #len(given_features)
 
-train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=-1, is_multi=is_multi, deltas=(spatial_choice == 'delta'))
+train_loader, test_loader = get_dataloader(total_stations, mean_std_file, n_features, batch_size=8, missing_ratio=0.02, type=data_type, data=data, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, missing_dims=-1, is_multi=is_multi, deltas=(spatial_choice == 'delta'), parts=parts)
 
 print(f"################### Data loading done ###################")
 
@@ -77,7 +77,7 @@ except Exception as e:
 
 model_diff_saits = DynaSTI_NASCE(config, device, n_spatial=n_spatial).to(device)
 
-filename = f"model_dynasti_nacse_delta.pth"
+filename = f"model_dynasti_nacse.pth"
 print(f"\nDynaSTI training starts.....\n")
 model_folder = 'saved_models_nacse'
 
@@ -234,7 +234,7 @@ data_folder = f"results_nacse/data"
 print(f"data folder: {data_folder}")
 
 filename = (data_file_test, data_file_test_loc, mean_std_file)
-evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=-1, latent_size=(latent_seq_dim, 2, n_iters, lr, random), deltas=(config['spatial_choice'] == 'delta'))
+evaluate_imputation_all(models=models, trials=3, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=16, filename=filename, spatial=True, simple=simple, unnormalize=False, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=False, missing_dims=-1, latent_size=(latent_seq_dim, 2, n_iters, lr, random), deltas=(config['spatial_choice'] == 'delta'), parts=parts)
 # evaluate_imputation_all(models=models, trials=1, mse_folder=data_folder, n_features=n_features, dataset_name='nasce', batch_size=1, filename=filename, spatial=True, simple=simple, unnormalize=True, n_stations=n_spatial, n_steps=n_steps, total_locations=total_stations, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, data=True, missing_dims=5, is_multi=is_multi, latent_size=(latent_seq_dim, 2, n_iters, lr, random))
 
 # d_rates = [0.1, 0.3, 0.5, 0.7, 0.9]

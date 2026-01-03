@@ -721,7 +721,7 @@ def calculate_mis(samples, y_true, alpha=0.1):
 def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, trials=3, length=-1, random_trial=False, forecasting=False, missing_ratio=0.01, test_indices=None, 
                             data=False, noise=False, filename=None, is_yearly=True, n_features=-1, n_steps=366, pattern=None, 
                             mean=None, std=None, partial_bm_config=None, spatial=False, unnormalize=False,
-                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_multi=False, latent_size=None, deltas=False):  
+                             simple=False, n_stations=100, total_locations=179, is_neighbor=False, spatial_choice=None, is_separate=False, zone=7, spatial_slider=False, dynamic_rate=-1, is_subset=False, missing_dims=-1, is_multi=False, latent_size=None, deltas=False, parts=False):  
     nsample = 50
     if 'CSDI' in models.keys():
         models['CSDI'].eval()
@@ -772,7 +772,7 @@ def evaluate_imputation_all(models, mse_folder, dataset_name='', batch_size=16, 
         if forecasting and not data and range_len is not None:
             length = np.random.randint(low=range_len[0], high=range_len[1] + 1)
         if dataset_name == 'nasce':
-            test_loader = get_testloader_nasce(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, deltas=deltas)
+            test_loader = get_testloader_nasce(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset, missing_dims=missing_dims, deltas=deltas, parts=parts)
         if dataset_name == 'awn':
             test_loader = get_testloader_awn(total_locations, filename[2], n_features, n_steps=n_steps, batch_size=batch_size, missing_ratio=missing_ratio, seed=(s + trial), length=length, forecasting=forecasting, random_trial=random_trial, pattern=pattern, partial_bm_config=partial_bm_config, spatial=spatial, simple=simple, is_neighbor=is_neighbor, spatial_choice=spatial_choice, is_separate=is_separate, zone=zone, spatial_slider=spatial_slider, dynamic_rate=dynamic_rate, is_subset=is_subset)
         if dataset_name == 'metrla':
