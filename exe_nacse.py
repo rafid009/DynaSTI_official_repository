@@ -99,7 +99,7 @@ train(
     d_time=config['model']['d_time'],
     is_spat=False,
     is_ema=is_ema,
-    name=f"nacse_delta"
+    name=f"nacse"
 )
 
 print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
@@ -107,7 +107,7 @@ print(f"DynaSTI params: {get_num_params(model_diff_saits)}")
 ema = EMA(model_diff_saits)
 
 # Define the file path where the EMA model is saved
-ema_model_filepath = f"{model_folder}/ema_model_nacse_delta.pth"
+ema_model_filepath = f"{model_folder}/ema_model_nacse.pth"
 
 # Load the saved EMA model
 ema.load(ema_model_filepath)
