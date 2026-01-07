@@ -151,21 +151,21 @@ model_diff_saits_fft = DynaSTI_AWN(config, device, n_spatial=n_spatial) #.to(dev
 filename = f"model_dynasti_fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}.pth"
 print(f"\nDynaSTI FFT training starts.....\n")
 
-# train(
-#     model_diff_saits_fft,
-#     config["train"],
-#     train_loader,
-#     valid_loader=test_loader,
-#     foldername=model_folder,
-#     filename=f"{filename}",
-#     is_dit=config['is_dit_ca2'],
-#     d_spatial=config['model']['d_spatial'],
-#     d_time=config['model']['d_time'],
-#     is_spat=False,
-#     is_ema=is_ema,
-#     name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
-#     latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
-# )
+train(
+    model_diff_saits_fft,
+    config["train"],
+    train_loader,
+    valid_loader=test_loader,
+    foldername=model_folder,
+    filename=f"{filename}",
+    is_dit=config['is_dit_ca2'],
+    d_spatial=config['model']['d_spatial'],
+    d_time=config['model']['d_time'],
+    is_spat=False,
+    is_ema=is_ema,
+    name=f"fft_awn{'_no_se' if no_se else ''}{'_no_te' if no_te else ''}{'_no_fe' if no_fe else ''}{'_random' if random else ''}",
+    latent_size=(latent_seq_dim, len(given_features), n_iters, lr, random)
+)
 
 ema = EMA(model_diff_saits_fft)
 

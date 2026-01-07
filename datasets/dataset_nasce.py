@@ -175,8 +175,11 @@ def get_test_data_spatial(X_train, X_test, X_loc_train, X_loc_test, index, X_pri
     if test_train_indices is not None:
         X_test = X_test.reshape(X_test.shape[0], -1, 2)
         X_test_temp = X_test[:, test_train_indices, :]
-        X_train = np.concatenate([X_train, X_test_temp], axis=1)
-        X_loc_train = np.concatenate([X_loc_train, X_loc_test[test_train_indices, :]], axis=0)
+        # X_train = np.concatenate([X_train, X_test_temp], axis=1)
+        # X_loc_train = np.concatenate([X_loc_train, X_loc_test[test_train_indices, :]], axis=0)
+        X_train = X_test_temp
+        X_loc_train = X_loc_test[test_train_indices, :]
+        
     if isinstance(index, int): 
         X_test_missing = np.expand_dims(X_test.reshape(X_test.shape[0], -1, 2)[:, index,:], axis=1)
     else:
