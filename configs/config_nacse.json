@@ -38,7 +38,7 @@
         "d_k": 64, 
         "d_v": 64, 
         "dropout": 0.1,
-        "spatial_context_dim": 3,
+        "spatial_context_dim": 6,
         "spatial_context_embedding_dim": 60,
         "feature_embed": 64,
         "h_channels": 128,

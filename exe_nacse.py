@@ -43,7 +43,7 @@ else:
     n_spatial = 143
 total_stations = 179
 spatial_choice = "" # 'sole-delta'
-spatial_context_dim = 6 if spatial_choice == 'add-delta' else 3
+spatial_context_dim = 6 if spatial_choice == 'add-delta' else 6
 miss_type = 'random'
 seed = 400 # np.random.randint(10,100)
 simple = False

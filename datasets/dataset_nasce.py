@@ -7,6 +7,8 @@ import pandas as pd
 import math
 torch.set_printoptions(precision=10)
 
+spatial_dim = 6
+
 def dynamic_sensor_selection(X_train, X_loc, rate=0.5, L=30, K=2):
     inverse_rate = int((1 - rate) * X_train.reshape(L, -1, K).shape[1])
     indices = np.random.choice(X_train.reshape(L, -1, K).shape[1], inverse_rate, replace=False)
@@ -163,8 +165,8 @@ def get_test_data(X_train, X, X_loc_train, X_loc, index, train_indices):
         X_test_values = X_test_values.reshape(X_test_values.shape[0], -1)
 
         X_test_loc = X_loc_train.copy()
-        X_test_loc = X_test_loc.reshape(-1, 3)
-        X_loc = X_loc.reshape(-1, 3)
+        X_test_loc = X_test_loc.reshape(-1, spatial_dim)
+        X_loc = X_loc.reshape(-1, spatial_dim)
         X_test_loc[len(train_indices), :] = X_loc[index, :]
         X_test_loc = X_test_loc.reshape(-1)
     return X_test, X_test_values, X_test_loc
@@ -448,11 +450,11 @@ class NASCE_Dataset(Dataset):
             # print(f"X loc: {X_loc.shape}")
             
             # print(f"X_loc reshape: {X_loc.reshape(B, L, -1, 3)[0,0,:,:]}")
-            self.max_loc = np.max(X_loc.reshape(-1, 3), axis=0)
-            self.min_loc = np.min(X_loc.reshape(-1, 3), axis=0)
+            self.max_loc = np.max(X_loc.reshape(-1, spatial_dim), axis=0)
+            self.min_loc = np.min(X_loc.reshape(-1, spatial_dim), axis=0)
             
-            self.mean_loc = np.mean(X_loc.reshape(-1, 3), axis=0)
-            self.std_loc = np.std(X_loc.reshape(-1, 3), axis=0)
+            self.mean_loc = np.mean(X_loc.reshape(-1, spatial_dim), axis=0)
+            self.std_loc = np.std(X_loc.reshape(-1, spatial_dim), axis=0)
         
             self.max_diff = np.load(f"./data/nacse/max_diffrence.npy")
             self.min_diff = np.load(f"./data/nacse/min_diffrence.npy")
@@ -464,7 +466,7 @@ class NASCE_Dataset(Dataset):
             
             # print(f"mean: {self.mean}\n\nstd: {self.std}")
         include_features = []
-        X_loc = X_loc.reshape(-1, 3)
+        X_loc = X_loc.reshape(-1, spatial_dim)
         # print(f"X_loc: {X_loc}")
         if not simple:
             
